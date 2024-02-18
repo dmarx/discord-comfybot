@@ -1,0 +1,6 @@
+discord.py
+loguru
+python-dotenv
+requests
+rich
+websocket-client[optional]
