@@ -77,7 +77,23 @@ async def on_ready():
         ws.connect("ws://{}/ws?clientId={}".format(server_address, client_id))
         bot.ws_comfy = ws
     logger.info("Bot is ready and connected to the ComfyUI backend.")
-    
+
+import requests
+
+@bot.command()
+async def set(ctx, *, message=''):
+    if not ctx.message.attachments:
+        await ctx.reply("Please attach a workflow to set it as the new default workflow.")
+    else:
+        logger.info(len(ctx.message.attachments))
+        # TODO: workflow registration
+        workflow_url = ctx.message.attachments[0]
+        response = requests.get(workflow_url)
+        new_workflow = response.json()
+        logger.info(f"old workflow:\n\n{bot._base_workflow}\n\n")
+        logger.info(f"new workflow:\n\n{new_workflow}\n\n")
+        bot._base_workflow = new_workflow
+        await ctx.reply("Default workflow updated.")
 
 @bot.command()
 async def dream(ctx, *, message=''):
