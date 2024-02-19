@@ -39,7 +39,7 @@
     },
     "class_type": "CLIPTextEncode",
     "_meta": {
-      "title": "CLIP Text Encode (Prompt)"
+      "title": "Prompt"
     }
   },
   "7": {
@@ -52,7 +52,7 @@
     },
     "class_type": "CLIPTextEncode",
     "_meta": {
-      "title": "CLIP Text Encode (Prompt)"
+      "title": "NegativePrompt"
     }
   },
   "8": {
