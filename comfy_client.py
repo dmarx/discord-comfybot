@@ -9,7 +9,7 @@ import urllib.parse
 import os
 
 
-server_address = os.environ.get('COMFY_URL')
+server_address = os.environ.get('COMFY_URL', 'localhost:8188')
 client_id = str(uuid.uuid4())
 
 def queue_prompt(prompt):
