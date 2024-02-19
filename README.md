@@ -23,6 +23,7 @@ NB: This tool is intended for private recreational use in small, private, carefu
 
 3. Populate a `.env` file with the credentials from (2), or otherwise populate the required environment variables enumerated in `.env.example`
 
+4. Start the bot via `python bot.py`
 
 ### Usage
 
