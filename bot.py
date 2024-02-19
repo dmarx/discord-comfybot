@@ -2,10 +2,11 @@
 # TODO:
 # * mechanism for registering/storing workflows
 # * argument for invoking registered workflows
+# * command to set/change current default workflow
 # * handle failed websocket connection
 # * report errors back to user
 # * report arguments back to user
-# * different model for base workflow. CR is too porny
+
 
 #############################################
 
@@ -46,12 +47,14 @@ def set_node_by_title(workflow, target_node, target_attr, value):
 import io
 import random
 import websocket
+import time
 
 import discord
 from discord.ext import commands
 
 from mini_parser import parse_args
-from comfy_client import get_images, server_address, client_id
+from comfy_client import get_images, server_address, client_id, comfy_is_ready
+
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -60,15 +63,25 @@ description="i'm a bot."
 
 bot = commands.Bot(command_prefix='.', description=description, intents=intents)
 
+# to do: set bot status somewhere visible to the user
 @bot.event
 async def on_ready():
+    logger.info(f'Logged in as {bot.user} (ID: {bot.user.id})')
     if not hasattr(bot, '_base_workflow'):
         bot._base_workflow = load_workflow()
+    curr_wait = 5
+    max_wait = 60
+    while not comfy_is_ready():
+        curr_wait*=2
+        curr_wait = min(curr_wait, max_wait)
+        logger.info(f"Unable to reach ComfyUI. Retrying in {curr_wait} seconds")
+        time.sleep(curr_wait)
     if not hasattr(bot, 'ws_comfy'):
         ws = websocket.WebSocket()
         ws.connect("ws://{}/ws?clientId={}".format(server_address, client_id))
         bot.ws_comfy = ws
-    logger.info(f'Logged in as {bot.user} (ID: {bot.user.id})')
+    logger.info("Bot is ready and connected to the ComfyUI backend.")
+    
 
 @bot.command()
 async def dream(ctx, *, message=''):
@@ -91,6 +104,10 @@ async def dream(ctx, *, message=''):
     images = get_images(bot.ws_comfy, workflow)
     im_data = list(images.values())[0][0]
     f = io.BytesIO(im_data)
-    await ctx.send(file=discord.File(f, 'TEST.png'))
+    #await ctx.send(file=discord.File(f, 'TEST.png'))
+    # simplify args
+    simple_args = {k:v['value'] for k,v in args['node_args'].items()}
+
+    await ctx.reply(str(simple_args), file=discord.File(f, 'TEST.png'))
 
 bot.run(bot_user_token)

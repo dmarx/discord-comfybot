@@ -7,10 +7,22 @@ import json
 import urllib.request
 import urllib.parse
 import os
+import requests
 
+from loguru import logger
+
+from dotenv import load_dotenv
+
+load_dotenv()
 
 server_address = os.environ.get('COMFY_URL', 'localhost:8188')
 client_id = str(uuid.uuid4())
+
+# consider incorporating tenacity here
+def comfy_is_ready() -> bool:
+    logger.info(f"Checking if ComfyUI is ready at {server_address}")
+    response = requests.get(f"http://{server_address}/queue")
+    return response.status_code == 200
 
 def queue_prompt(prompt):
     p = {"prompt": prompt, "client_id": client_id}
