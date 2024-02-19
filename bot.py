@@ -5,10 +5,6 @@
 # * command to set/change current default workflow
 # * handle failed websocket connection
 # * report errors back to user
-# * report arguments back to user
-
-
-#############################################
 
 from dotenv import load_dotenv
 import os
@@ -95,6 +91,8 @@ async def dream(ctx, *, message=''):
         message += f" --seed {random.randint(0, 0xffffffffffffffff)}"
     args = parse_args(message)
     logger.info(args)
+    # for reply
+    simple_args = {k:v['value'] for k,v in args['node_args'].items()}
 
     workflow = copy.deepcopy(bot._base_workflow)
     for k, rec in args['node_args'].items():
@@ -104,9 +102,6 @@ async def dream(ctx, *, message=''):
     images = get_images(bot.ws_comfy, workflow)
     im_data = list(images.values())[0][0]
     f = io.BytesIO(im_data)
-    #await ctx.send(file=discord.File(f, 'TEST.png'))
-    # simplify args
-    simple_args = {k:v['value'] for k,v in args['node_args'].items()}
 
     await ctx.reply(str(simple_args), file=discord.File(f, 'TEST.png'))
 
