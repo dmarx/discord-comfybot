@@ -51,6 +51,8 @@ from discord.ext import commands
 from mini_parser import parse_args
 from comfy_client import get_images, server_address, client_id, comfy_is_ready
 
+import requests
+
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -58,6 +60,7 @@ intents.message_content = True
 description="i'm a bot."
 
 bot = commands.Bot(command_prefix='.', description=description, intents=intents)
+
 
 # to do: set bot status somewhere visible to the user
 @bot.event
@@ -78,7 +81,10 @@ async def on_ready():
         bot.ws_comfy = ws
     logger.info("Bot is ready and connected to the ComfyUI backend.")
 
-import requests
+@bot.command()
+async def reset(ctx, *, message=''):
+    bot._base_workflow = load_workflow()
+    await ctx.reply("Workflow reset to default workflow")
 
 @bot.command()
 async def set(ctx, *, message=''):
