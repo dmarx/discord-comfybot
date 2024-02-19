@@ -2,10 +2,14 @@
 
 A simple and flexible discord bot that uses ComfyUI as a backend for content generation.
 
+NB: This tool is intended for private recreational use in small, private, carefully curated communities only. This bot gives your users a lot of power over the comfy environment and there's a high risk that malicious users could abuse this system to run arbitrary code on your ComfyUI server. You've been warned.
+
+
 ### Features
 
 * Discord users can modify all parameters in basically any arbitrary workflow using simple syntax
 * ComfyUI backend decoupled from the bot, so you can use your own local ComfyUI or remotely served
+
 
 ### Setup
 
@@ -19,7 +23,17 @@ A simple and flexible discord bot that uses ComfyUI as a backend for content gen
 
 3. Populate a `.env` file with the credentials from (2), or otherwise populate the required environment variables enumerated in `.env.example`
 
+
 ### Usage
+
+Supported arguments:
+
+* `.dream` - generate content using comfyui
+* `.set` - set the current workflow to user-provided (message attachment)
+* `.reset` - revert to default workflow
+
+
+#### `.dream`
 
     .dream start with the prompt --seed 1234 --NodeName.attribute newvalue
 
@@ -37,3 +51,8 @@ In other words, if a user provides a `--seed 0` argument, the bot will behave as
 Similarly, by default, the bot assumes that the main prompt goes in a node named "Prompt". 
 
 As a general rule: **nodes that could be targets for user intervention should use names with no spaces or special characters**. You can get around this by creating argument aliases in the `special_args_map.json`, but you're probably better off just naming your workflow nodes using **CamelCase** or some such.
+
+
+#### `.set`
+
+Here there be dragons. 
