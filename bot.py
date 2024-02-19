@@ -23,7 +23,7 @@ import json
 
 
 def load_workflow(fpath="workflow_api.json"):
-    print('loading workflow')
+    print(f'loading workflow: {fpath}')
     with open(fpath) as f:
         return json.load(f)
 
@@ -66,8 +66,14 @@ bot = commands.Bot(command_prefix='.', description=description, intents=intents)
 @bot.event
 async def on_ready():
     logger.info(f'Logged in as {bot.user} (ID: {bot.user.id})')
+
+    if not hasattr(bot, '_workflow_registry'):
+        with open('workflow_registry.json') as f:
+            bot._workflow_registry = json.load(f)
     if not hasattr(bot, '_base_workflow'):
-        bot._base_workflow = load_workflow()
+        fpath = bot._workflow_registry['default']
+        bot._base_workflow = load_workflow(fpath)
+    
     curr_wait = 5
     max_wait = 60
     while not comfy_is_ready():
@@ -83,23 +89,59 @@ async def on_ready():
 
 @bot.command()
 async def reset(ctx, *, message=''):
-    bot._base_workflow = load_workflow()
+    fpath = bot._workflow_registry['default']
+    bot._base_workflow = load_workflow(fpath)
     await ctx.reply("Workflow reset to default workflow")
 
 @bot.command()
-async def set(ctx, *, message=''):
-    if not ctx.message.attachments:
+async def register(ctx, *, message=''):
+    workflow_name = message
+    if not message:
+        await ctx.reply("Please provide a name to register the workflow to: `.register workflowName`")
+    elif not ctx.message.attachments:
         await ctx.reply("Please attach a workflow to set it as the new default workflow.")
+    elif workflow_name in bot._workflow_registry:
+        await ctx.reply(f"There's already a workflow registered to the name {workflow_name}. Please pick a different name.")
     else:
-        logger.info(len(ctx.message.attachments))
-        # TODO: workflow registration
+        
         workflow_url = ctx.message.attachments[0]
         response = requests.get(workflow_url)
+        _, fname = response.headers['Content-Disposition'].split('filename=')
+        fname = fname[1:-1] # remove quotes
         new_workflow = response.json()
-        logger.info(f"old workflow:\n\n{bot._base_workflow}\n\n")
+        with open(fname) as f:
+            json.dump(new_workflow)
+        bot._workflow_registry[workflow_name] = fname
+
+@bot.command()
+async def set(ctx, *, message=''):
+    # if not ctx.message.attachments:
+    #     await ctx.reply("Please attach a workflow to set it as the new default workflow.")
+    # else:
+    #     #logger.info(len(ctx.message.attachments))
+    #     # TODO: workflow registration
+    #     workflow_url = ctx.message.attachments[0]
+    #     response = requests.get(workflow_url)
+    #     new_workflow = response.json()
+    #     logger.info(f"old workflow:\n\n{bot._base_workflow}\n\n")
+    #     logger.info(f"new workflow:\n\n{new_workflow}\n\n")
+    #     bot._base_workflow = new_workflow
+    #     await ctx.reply("Default workflow updated.")
+    workflow_name = message
+    if workflow_name not in bot._workflow_registry:
+        padleft = "* `"
+        padright = "`\n"
+        await ctx.reply(
+            f"There's no workflow registered to the name {workflow_name}. "
+            f"Available registered workflows:\n{''.join([padleft+k+padright for k in bot._workflow_registry])}"
+        )
+    else:
+        fpath = bot._workflow_registry[workflow_name]
+        new_workflow = load_workflow(fpath)
         logger.info(f"new workflow:\n\n{new_workflow}\n\n")
         bot._base_workflow = new_workflow
         await ctx.reply("Default workflow updated.")
+
 
 @bot.command()
 async def dream(ctx, *, message=''):
