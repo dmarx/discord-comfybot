@@ -183,15 +183,9 @@ def prep_workflow(workflow):
         v['_meta']['title'] = curr_title
     return workflow
 
-@bot.command()
-async def describe(ctx, *, message=''):
-    #recs = [(v['class_type'], v['_meta']['title'],p,q) for v in w.values() for p,q in v['inputs'].items() if type(q)!=list]
-    #outstr = ""
-    #for rec in recs:
-    #    outstr += f"{rec[0]} - {rec[1]}.{rec[2]}: {rec[3]}\n"
-    w,_ = get_workflow(bot, message)
+def summarize_workflow(workflow):
     outstr = "```"
-    for v in w.values():
+    for v in workflow.values():
         #outstr += f"{v['class_type']} - '{v['_meta']['title']}'\n"
         #n = len()
         recs = []
@@ -209,6 +203,16 @@ async def describe(ctx, *, message=''):
             outstr += f"  {pad} {k}: {v}\n"
         outstr+="\n"
     outstr+="```"
+    return outstr
+
+@bot.command()
+async def describe(ctx, *, message=''):
+    #recs = [(v['class_type'], v['_meta']['title'],p,q) for v in w.values() for p,q in v['inputs'].items() if type(q)!=list]
+    #outstr = ""
+    #for rec in recs:
+    #    outstr += f"{rec[0]} - {rec[1]}.{rec[2]}: {rec[3]}\n"
+    w,_ = get_workflow(bot, message)
+    outstr = summarize_workflow(w)
     await ctx.reply(outstr)
 
 
