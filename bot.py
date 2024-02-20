@@ -171,6 +171,16 @@ def prep_workflow(workflow):
             curr_title += '-'
         titles.add(curr_title)
         v['_meta']['title'] = curr_title
+
+    for v in w.values():
+        curr_title = v['_meta']['title']
+        n = 0
+        while curr_title.endswith('-'):
+            curr_title = curr_title[:-1]
+            n+=1
+        if n:
+            curr_title += str(n+1)
+        v['_meta']['title'] = curr_title
     return workflow
 
 @bot.command()
