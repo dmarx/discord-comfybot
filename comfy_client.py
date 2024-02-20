@@ -35,6 +35,10 @@ def list_available_loras():
 def restart_comfy():
     requests.get(f"http://{server_address}/manager/reboot")
 
+# untested
+def install_missing_custom_nodes():
+    requests.get(f"http://{server_address}/component/get_unresolved")
+
 ###################################################################
 
 # consider incorporating tenacity here
