@@ -110,30 +110,39 @@ async def register(ctx, *, message=''):
             json.dump(new_workflow)
         bot._workflow_registry[workflow_name] = fname
 
-@bot.command()
-async def list(ctx, *, message=''):
+
+def list_workflows_(bot):
     padleft = "* `"
     padright = "`\n"
-    await ctx.reply(
+    msg = (
         f"Available registered workflows:\n{''.join([padleft+k+padright for k in bot._workflow_registry])}"
     )
+    return msg
+
 
 @bot.command()
-async def set(ctx, *, message=''):
-    workflow_name = message
+async def list_workflows(ctx, *, message=''):
+   await ctx.reply(list_workflows_(bot))
+
+
+def get_workflow(bot,workflow_name):
     if workflow_name not in bot._workflow_registry:
-        padleft = "* `"
-        padright = "`\n"
-        await ctx.reply(
-            f"There's no workflow registered to the name {workflow_name}. "
-            f"Available registered workflows:\n{''.join([padleft+k+padright for k in bot._workflow_registry])}"
-        )
+        #await ctx.reply(f"There's no workflow registered to the name {workflow_name}.\n{list_workflows(bot)}")
+        return copy.deepcopy(bot._base_workflow), False
     else:
         fpath = bot._workflow_registry[workflow_name]
-        new_workflow = load_workflow(fpath)
+        return load_workflow(fpath), True
+
+@bot.command()
+async def set_workflow(ctx, *, message=''):
+    workflow_name = message
+    new_workflow, is_new = get_workflow(workflow_name)
+    if is_new:
         logger.info(f"new workflow:\n\n{new_workflow}\n\n")
         bot._base_workflow = new_workflow
         await ctx.reply("Default workflow updated.")
+    else:
+        await ctx.reply(f"There's no workflow registered to the name {workflow_name}.\n{list_workflows_(bot)}")
 
 
 @bot.command()
@@ -152,13 +161,29 @@ async def dream(ctx, *, message=''):
     simple_args = {k:v['value'] for k,v in args['node_args'].items()}
 
     workflow = copy.deepcopy(bot._base_workflow)
+    if 'workflow' in args['other_args']:
+        target_workflow = args['other_args']['workflow']
+        workflow, success = get_workflow(bot, target_workflow)
+        if success:
+            logger.info(f"temporarily using workflow {target_workflow}")
+        else:
+            await ctx.reply(
+            #ctx.reply(
+                f"There's no workflow registered to the name {target_workflow}. "
+                #"Falling back to default workflow. "
+                f"\n{list_workflows_(bot)}"
+                )
+            return
+
     for k, rec in args['node_args'].items():
         workflow = set_node_by_title(workflow, rec['node_name'], rec['target_attr'], rec['value'])
     logger.info(workflow)
 
     images = get_images(bot.ws_comfy, workflow)
+    logger.debug(len(images))
     im_data = list(images.values())[0][0]
     f = io.BytesIO(im_data)
+    logger.debug("pushed images to bytes object")
 
     await ctx.reply(str(simple_args), file=discord.File(f, 'TEST.png'))
 
