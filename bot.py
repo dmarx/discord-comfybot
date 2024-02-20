@@ -118,8 +118,8 @@ def list_workflows_(bot):
     )
     return msg
 
-@bot.command()
-async def list_workflows(ctx, *, message=''):
+@bot.command(name='list')
+async def list_(ctx, *, message=''):
    await ctx.reply(list_workflows_(bot))
 
 def get_workflow(bot,workflow_name):
@@ -129,10 +129,13 @@ def get_workflow(bot,workflow_name):
         fpath = bot._workflow_registry[workflow_name]
         return load_workflow(fpath), True
 
-@bot.command()
-async def set_workflow(ctx, *, message=''):
+@bot.command(name='set')
+async def set_(ctx, *, message=''):
     workflow_name = message
-    new_workflow, is_new = get_workflow(workflow_name)
+    if not workflow_name:
+        await ctx.reply(f"No workflow name provided. \n{list_workflows_(bot)}")
+        return
+    new_workflow, is_new = get_workflow(bot, workflow_name)
     if is_new:
         logger.info(f"new workflow:\n\n{new_workflow}\n\n")
         bot._base_workflow = new_workflow
