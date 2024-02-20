@@ -6,15 +6,13 @@ Parser for a simple argument specification grammar
 
 import json
 import rich
+from loguru import logger
 
-# special_args_map = {
-#     'prompt':{'node_name':'Prompt', 'target_attr':'text'}
-# }
 
 # There should probably be a way for the user to specify this.
 # Would need to include resetting the map with the default workflow in .reset
 def load_args_map(fpath="special_args_map.json"):
-    print('loading args map')
+    logger.info('loading args map')
     with open(fpath) as f:
         return json.load(f)
 

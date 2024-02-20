@@ -20,7 +20,7 @@ import json
 
 
 def load_workflow(fpath="workflow_api.json"):
-    print(f'loading workflow: {fpath}')
+    logger.info(f'loading workflow: {fpath}')
     with open(fpath) as f:
         return json.load(f)
 
