@@ -111,11 +111,13 @@ async def register(ctx, *, message=''):
         
         workflow_url = ctx.message.attachments[0]
         response = requests.get(workflow_url)
-        _, fname = response.headers['Content-Disposition'].split('filename=')
-        fname = fname[1:-1] # remove quotes
+        #_, fname = response.headers['Content-Disposition'].split('filename=')
+        #fname = fname[1:-1] # remove quotes
+        fname = f"{workflow_name}.json"
         new_workflow = response.json()
-        with open(fname) as f:
-            json.dump(new_workflow)
+        new_workflow = prep_workflow(new_workflow)
+        with open(fname, 'w') as f:
+            json.dump(new_workflow, f)
         bot._workflow_registry[workflow_name] = fname
 
 def list_workflows_(bot):
@@ -142,6 +144,34 @@ def get_workflow(bot,workflow_name):
     else:
         fpath = bot._workflow_registry[workflow_name]
         return load_workflow(fpath), True
+
+import string
+
+def sanitize_title(title):
+    title= title.strip()
+    for g in string.punctuation:
+        if g in ('_','-'):
+            continue
+        title = title.replace(g, ' ')
+    title = title.title() 
+    title = title.replace(' ','')
+    return title
+
+def prep_workflow(workflow):
+    """
+    * sanitize titles so they conform to the titling requirements for parameter setting
+    """
+    # track node titles we've seen to enforce uniqueness
+    titles = set()
+    w = workflow
+    for v in w.values():
+        curr_title = v['_meta']['title']
+        curr_title = sanitize_title(curr_title)
+        while curr_title in titles:
+            curr_title += '-'
+        titles.add(curr_title)
+        v['_meta']['title'] = curr_title
+    return workflow
 
 @bot.command()
 async def describe(ctx, *, message=''):
