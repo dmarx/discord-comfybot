@@ -111,6 +111,14 @@ async def register(ctx, *, message=''):
         bot._workflow_registry[workflow_name] = fname
 
 @bot.command()
+async def list(ctx, *, message=''):
+    padleft = "* `"
+    padright = "`\n"
+    await ctx.reply(
+        f"Available registered workflows:\n{''.join([padleft+k+padright for k in bot._workflow_registry])}"
+    )
+
+@bot.command()
 async def set(ctx, *, message=''):
     workflow_name = message
     if workflow_name not in bot._workflow_registry:

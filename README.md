@@ -29,9 +29,11 @@ NB: This tool is intended for private recreational use in small, private, carefu
 
 Supported arguments:
 
-* `.dream` - generate content using comfyui
-* `.set` - set the current workflow to user-provided (message attachment)
-* `.reset` - revert to default workflow
+* `.dream PROMPT [--NodeName.param value][--seed value]` - generate content using comfyui
+* `.register WORKFLOWNAME` - register a user-provided workflow
+* `.set WORKFLOWNAME` - set the active workflow to a registered workflow
+* `.reset` - revert active workflow to the server default
+* `.list` - list registered workflows
 
 
 #### `.dream`
@@ -53,7 +55,3 @@ Similarly, by default, the bot assumes that the main prompt goes in a node named
 
 As a general rule: **nodes that could be targets for user intervention should use names with no spaces or special characters**. You can get around this by creating argument aliases in the `special_args_map.json`, but you're probably better off just naming your workflow nodes using **CamelCase** or some such.
 
-
-#### `.set`
-
-Here there be dragons. 
