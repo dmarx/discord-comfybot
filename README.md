@@ -62,14 +62,14 @@ As a general rule: **nodes that could be targets for user intervention should us
 If a workflow name is not provided, describes the current default.
 
 ```
-CheckpointLoaderSimple - 'Load Checkpoint'
+CheckpointLoaderSimple - 'LoadCheckpoint'
   └── ckpt_name: SDXL-TURBO/sd_xl_turbo_1.0_fp16.safetensors
 
 CLIPTextEncode - 'Prompt'
   └── text: yosemite national park
 
 CLIPTextEncode - 'NegativePrompt'
-  └── text: grotesque, confusing, crowded, monochrome, saturated
+  └── text: nsfw, nude, grotesque, confusing, crowded, mutated, fake, stupid, ugly, malformed, monochrome, saturated
 
 KSampler - 'KSampler'
   ├── seed: 649762998076170
@@ -83,8 +83,4 @@ EmptyLatentImage - 'EmptyLatent'
   ├── width: 768
   ├── height: 768
   └── batch_size: 1
-
-VAEDecode - 'VAE Decode'
-
-PreviewImage - 'Preview Image'
 ```
