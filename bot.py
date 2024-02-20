@@ -46,7 +46,14 @@ import discord
 from discord.ext import commands
 
 from mini_parser import parse_args
-from comfy_client import get_images, server_address, client_id, comfy_is_ready
+from comfy_client import (
+    get_images,
+    server_address,
+    client_id,
+    comfy_is_ready,
+    list_available_checkpoints,
+    list_available_loras,
+)
 
 import requests
 
@@ -120,7 +127,13 @@ def list_workflows_(bot):
 
 @bot.command(name='list')
 async def list_(ctx, *, message=''):
-   await ctx.reply(list_workflows_(bot))
+    if message in ('models', 'checkpoints'):
+        answer = list_available_checkpoints()
+    elif message == 'loras':
+        answer = list_available_loras()
+    else:
+        answer = list_workflows_(bot)
+    await ctx.reply(answer)
 
 def get_workflow(bot,workflow_name):
     if workflow_name not in bot._workflow_registry:

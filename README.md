@@ -33,7 +33,7 @@ Supported arguments:
 * `.register WORKFLOWNAME` - register a user-provided workflow
 * `.set WORKFLOWNAME` - set the active workflow to a registered workflow
 * `.reset` - revert active workflow to the server default
-* `.list` - list registered workflows
+* `.list [models, loras]` - list registered workflows. can also be used to list available models and loras
 
 
 #### `.dream`

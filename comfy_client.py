@@ -18,6 +18,19 @@ load_dotenv()
 server_address = os.environ.get('COMFY_URL', 'localhost:8188')
 client_id = str(uuid.uuid4())
 
+
+def get_object_info():
+    response = requests.get(f"http://{server_address}/object_info")
+    return response.json()
+
+def list_available_checkpoints():
+    info = get_object_info()
+    return info['CheckpointLoaderSimple']['input']['required']['ckpt_name']
+
+def list_available_loras():
+    info = get_object_info()
+    return info['LoraLoader']['input']['required']['lora_name']
+
 # consider incorporating tenacity here
 def comfy_is_ready() -> bool:
     logger.info(f"Checking if ComfyUI is ready at {server_address}")
