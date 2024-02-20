@@ -1,8 +1,5 @@
 
 # TODO:
-# * mechanism for registering/storing workflows
-# * argument for invoking registered workflows
-# * command to set/change current default workflow
 # * handle failed websocket connection
 # * report errors back to user
 
@@ -115,18 +112,6 @@ async def register(ctx, *, message=''):
 
 @bot.command()
 async def set(ctx, *, message=''):
-    # if not ctx.message.attachments:
-    #     await ctx.reply("Please attach a workflow to set it as the new default workflow.")
-    # else:
-    #     #logger.info(len(ctx.message.attachments))
-    #     # TODO: workflow registration
-    #     workflow_url = ctx.message.attachments[0]
-    #     response = requests.get(workflow_url)
-    #     new_workflow = response.json()
-    #     logger.info(f"old workflow:\n\n{bot._base_workflow}\n\n")
-    #     logger.info(f"new workflow:\n\n{new_workflow}\n\n")
-    #     bot._base_workflow = new_workflow
-    #     await ctx.reply("Default workflow updated.")
     workflow_name = message
     if workflow_name not in bot._workflow_registry:
         padleft = "* `"
