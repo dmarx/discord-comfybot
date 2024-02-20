@@ -143,6 +143,34 @@ def get_workflow(bot,workflow_name):
         fpath = bot._workflow_registry[workflow_name]
         return load_workflow(fpath), True
 
+@bot.command()
+async def describe(ctx, *, message=''):
+    #recs = [(v['class_type'], v['_meta']['title'],p,q) for v in w.values() for p,q in v['inputs'].items() if type(q)!=list]
+    #outstr = ""
+    #for rec in recs:
+    #    outstr += f"{rec[0]} - {rec[1]}.{rec[2]}: {rec[3]}\n"
+    w,_ = get_workflow(bot, message)
+    outstr = "```"
+    for v in w.values():
+        outstr += f"{v['class_type']} - '{v['_meta']['title']}'\n"
+        #n = len()
+        recs = []
+        for p, q in v['inputs'].items():
+            if type(q)==list:
+                continue
+            recs.append((p,q))
+        n = len(recs)
+        for k,v in recs:
+            n-=1
+            pad = "├──" if n>0 else "└──"
+            outstr += f"  {pad} {k}: {v}\n"
+        outstr+="\n"
+    outstr+="```"
+    await ctx.reply(outstr)
+
+
+
+
 @bot.command(name='set')
 async def set_(ctx, *, message=''):
     workflow_name = message
