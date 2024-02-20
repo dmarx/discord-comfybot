@@ -110,7 +110,6 @@ async def register(ctx, *, message=''):
             json.dump(new_workflow)
         bot._workflow_registry[workflow_name] = fname
 
-
 def list_workflows_(bot):
     padleft = "* `"
     padright = "`\n"
@@ -119,15 +118,12 @@ def list_workflows_(bot):
     )
     return msg
 
-
 @bot.command()
 async def list_workflows(ctx, *, message=''):
    await ctx.reply(list_workflows_(bot))
 
-
 def get_workflow(bot,workflow_name):
     if workflow_name not in bot._workflow_registry:
-        #await ctx.reply(f"There's no workflow registered to the name {workflow_name}.\n{list_workflows(bot)}")
         return copy.deepcopy(bot._base_workflow), False
     else:
         fpath = bot._workflow_registry[workflow_name]
@@ -143,7 +139,6 @@ async def set_workflow(ctx, *, message=''):
         await ctx.reply("Default workflow updated.")
     else:
         await ctx.reply(f"There's no workflow registered to the name {workflow_name}.\n{list_workflows_(bot)}")
-
 
 @bot.command()
 async def dream(ctx, *, message=''):
@@ -168,9 +163,7 @@ async def dream(ctx, *, message=''):
             logger.info(f"temporarily using workflow {target_workflow}")
         else:
             await ctx.reply(
-            #ctx.reply(
                 f"There's no workflow registered to the name {target_workflow}. "
-                #"Falling back to default workflow. "
                 f"\n{list_workflows_(bot)}"
                 )
             return
