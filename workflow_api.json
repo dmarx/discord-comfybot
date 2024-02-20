@@ -5,7 +5,7 @@
     },
     "class_type": "CheckpointLoaderSimple",
     "_meta": {
-      "title": "Load Checkpoint"
+      "title": "LoadCheckpoint"
     }
   },
   "2": {
@@ -88,7 +88,7 @@
     },
     "class_type": "VAEDecode",
     "_meta": {
-      "title": "VAE Decode"
+      "title": "VaeDecode"
     }
   },
   "7": {
@@ -100,7 +100,7 @@
     },
     "class_type": "PreviewImage",
     "_meta": {
-      "title": "Preview Image"
+      "title": "PreviewImage"
     }
   }
 }
