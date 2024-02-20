@@ -30,13 +30,14 @@ NB: This tool is intended for private recreational use in small, private, carefu
 Supported arguments:
 
 * `.dream PROMPT [--NodeName.param value][--seed value]` - generate content using comfyui
+* `.describe WORKFLOWNAME` - print a summary of a workflow to show available parameters and their default values
 * `.register WORKFLOWNAME` - register a user-provided workflow
 * `.set WORKFLOWNAME` - set the active workflow to a registered workflow
 * `.reset` - revert active workflow to the server default
 * `.list [models, loras]` - list registered workflows. can also be used to list available models and loras
-* `.describe WORKFLOWNAME` - print a summary of a workflow to show available parameters and their default values
 
-#### `.dream`
+
+#### `.dream PROMPT [--NodeName.param value][--seed value]`
 
     .dream start with the prompt --seed 1234 --NodeName.attribute newvalue
 
@@ -55,3 +56,35 @@ Similarly, by default, the bot assumes that the main prompt goes in a node named
 
 As a general rule: **nodes that could be targets for user intervention should use names with no spaces or special characters**. You can get around this by creating argument aliases in the `special_args_map.json`, but you're probably better off just naming your workflow nodes using **CamelCase** or some such.
 
+
+#### `.describe WORKFLOWNAME`
+
+If a workflow name is not provided, describes the current default.
+
+```
+CheckpointLoaderSimple - 'Load Checkpoint'
+  └── ckpt_name: SDXL-TURBO/sd_xl_turbo_1.0_fp16.safetensors
+
+CLIPTextEncode - 'Prompt'
+  └── text: yosemite national park
+
+CLIPTextEncode - 'NegativePrompt'
+  └── text: grotesque, confusing, crowded, monochrome, saturated
+
+KSampler - 'KSampler'
+  ├── seed: 649762998076170
+  ├── steps: 6
+  ├── cfg: 1.8
+  ├── sampler_name: lcm
+  ├── scheduler: normal
+  └── denoise: 1
+
+EmptyLatentImage - 'EmptyLatent'
+  ├── width: 768
+  ├── height: 768
+  └── batch_size: 1
+
+VAEDecode - 'VAE Decode'
+
+PreviewImage - 'Preview Image'
+```
