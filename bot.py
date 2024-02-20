@@ -53,6 +53,7 @@ from comfy_client import (
     comfy_is_ready,
     list_available_checkpoints,
     list_available_loras,
+    restart_comfy,
 )
 
 import requests
@@ -195,5 +196,20 @@ async def dream(ctx, *, message=''):
     logger.debug("pushed images to bytes object")
 
     await ctx.reply(str(simple_args), file=discord.File(f, 'TEST.png'))
+
+from http.client import RemoteDisconnected
+
+# @bot.command()
+# async def reboot(ctx, *, message=''):
+#     #logger.info("closing websocket")
+#     #bot.ws_comfy.close() # discord really disliked that. i'm wondering if maybe... the websocket connections are shared or something?
+#     try:
+#         restart_comfy() # kills the websocket connection
+#     except Exception as e:
+#         logger.info(type(e))
+#         #logger.info("Comfy restarting...")
+#     #except (ConnectionRefusedError, requests.exceptions.ConnectionError):    
+#     await on_ready()
+
 
 bot.run(bot_user_token)
