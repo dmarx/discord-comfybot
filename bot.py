@@ -192,7 +192,7 @@ async def describe(ctx, *, message=''):
     w,_ = get_workflow(bot, message)
     outstr = "```"
     for v in w.values():
-        outstr += f"{v['class_type']} - '{v['_meta']['title']}'\n"
+        #outstr += f"{v['class_type']} - '{v['_meta']['title']}'\n"
         #n = len()
         recs = []
         for p, q in v['inputs'].items():
@@ -200,6 +200,9 @@ async def describe(ctx, *, message=''):
                 continue
             recs.append((p,q))
         n = len(recs)
+        if not n:
+            continue
+        outstr += f"{v['class_type']} - '{v['_meta']['title']}'\n"
         for k,v in recs:
             n-=1
             pad = "├──" if n>0 else "└──"
