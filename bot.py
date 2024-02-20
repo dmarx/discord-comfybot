@@ -120,6 +120,10 @@ async def register(ctx, *, message=''):
             json.dump(new_workflow, f)
         bot._workflow_registry[workflow_name] = fname
 
+        outstr = summarize_workflow(new_workflow)
+        await ctx.reply(outstr)
+
+
 def list_workflows_(bot):
     padleft = "* `"
     padright = "`\n"
@@ -272,7 +276,7 @@ async def dream(ctx, *, message=''):
 
     await ctx.reply(str(simple_args), file=discord.File(f, 'TEST.png'))
 
-from http.client import RemoteDisconnected
+#from http.client import RemoteDisconnected
 
 # @bot.command()
 # async def reboot(ctx, *, message=''):
