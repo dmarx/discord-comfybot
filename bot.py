@@ -2,6 +2,15 @@
 # TODO:
 # * handle failed websocket connection
 # * report errors back to user
+# * make workflow registry persistent
+#   - need to update the registry .json
+#   - even simpler: just have a fucking dedicated folder
+# * .set for updating values in the active workflow
+# * .save/.commit/.whatever to update the registry with the current settings
+#    - should also have the option to save to a new name
+#    - feels like a lot of what i'm doing here is "workflow management"
+# * maybe some special command attached to a workflow that just does something simple with the civit.ai nodes so people can download models
+#   -  stuff like this should probably just be a different worker or somerthing
 
 from dotenv import load_dotenv
 import os
@@ -53,7 +62,8 @@ from comfy_client import (
     comfy_is_ready,
     list_available_checkpoints,
     list_available_loras,
-    restart_comfy,
+    #restart_comfy,
+    get_model_zoo,
 )
 
 import requests
@@ -132,12 +142,30 @@ def list_workflows_(bot):
     )
     return msg
 
+from collections import Counter
+
 @bot.command(name='list')
 async def list_(ctx, *, message=''):
     if message in ('models', 'checkpoints'):
         answer = list_available_checkpoints()
     elif message == 'loras':
         answer = list_available_loras()
+    elif message.startswith('zoo'):
+        kind = None
+        if ' ' in message:
+            _, kind = message.split()
+            kind = kind.strip()
+        zoo = get_model_zoo()
+        cnt = Counter()
+        answer = "base | name"
+        for rec in zoo['models']:
+            if (rec['installed'] != 'True'):
+                cnt[rec['type']] +=1
+                if  (rec['type'] == kind):
+                    answer += f"\n {rec['base']} \t {rec['name']}"
+        if '\n' not in answer:
+            #answer = cnt.most_common()
+            answer = '\n'.join([f"{k}: {v}" for k,v in cnt.most_common()])
     else:
         answer = list_workflows_(bot)
     await ctx.reply(answer)

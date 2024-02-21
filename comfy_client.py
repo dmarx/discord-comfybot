@@ -41,6 +41,39 @@ def install_missing_custom_nodes():
 
 ###################################################################
 
+def get_model_zoo():
+    response = requests.get(f"http://{server_address}/externalmodel/getlist?mode=cache")
+    return response.json()
+
+def list_saved_workflows():
+    response = requests.get(f"http://{server_address}/pysssss/workflows")
+    return response.json()
+
+from urllib.parse import quote
+
+def fetch_saved_workflow(name):
+    response = requests.get(f"http://{server_address}/pysssss/workflows/{quote(name)}")
+    return response.json()
+
+def save_workflow(name, workflow):
+    payload = {'name':name, 'workflow':workflow}
+    response = requests.post(f"http://{server_address}/pysssss/workflows", data=payload)
+
+
+# sample payload: {"base":"SDXL","description":"(SDXL Verison) To view the preview in high quality while running samples in ComfyUI, you will need this model.","filename":"taesdxl_encoder.pth","name":"TAESDXL Encoder","reference":"https://github.com/madebyollin/taesd","save_path":"vae_approx","type":"TAESD","url":"https://github.com/madebyollin/taesd/raw/main/taesdxl_encoder.pth","installed":"False"}
+# sample zoo entry: {'base': 'efficient_sam', 'description': 'Install efficient_sam_s_gpu.jit into ComfyUI-YoloWorld-EfficientSAM', 'filename': 'efficient_sam_s_gpu.jit', 'name': 'efficient_sam_s_gpu.jit [ComfyUI-YoloWorld-EfficientSAM]', 'reference': 'https://huggingface.co/camenduru/YoloWorld-EfficientSAM/tree/main', 'save_path': 'custom_nodes/ComfyUI-YoloWorld-EfficientSAM', 'type': 'efficient_sam', 'url': 'https://huggingface.co/camenduru/YoloWorld-EfficientSAM/resolve/main/efficient_sam_s_gpu.jit', 'installed': 'False'}
+def install_model(name):
+    zoo = get_model_zoo()
+    payload = None
+    for rec in zoo['models']:
+        if rec['name'] == name:
+            payload = rec
+            break
+    if payload:
+        response = requests.post(f"http://{server_address}/model/install", data=payload)
+
+###################################################################
+
 # consider incorporating tenacity here
 def comfy_is_ready() -> bool:
     logger.info(f"Checking if ComfyUI is ready at {server_address}")
