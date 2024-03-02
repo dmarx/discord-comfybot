@@ -50,7 +50,8 @@ from workflow_utils import (
 
 )
 
-from collections import Counter
+from collections import Counter, UserDict
+from dataclasses import dataclass
 import requests
 
 
@@ -62,6 +63,22 @@ bot_user_token = os.environ.get('BOT_USER_TOKEN')
 
 ##############################################
 
+from typing import Dict, List, Union, Optional
+
+class Workflow(UserDict):
+    # TODO: validate api confmity on init
+    def __str__(self):
+        return json.dumps(self)
+
+@dataclass
+class BotDB:
+    workflow_registry: Dict[str, Workflow | None ] # {name, workflow}
+    default_workflow_name: str = 'default'
+    active_workflow: Workflow = None
+    active_workflow_has_uncommitted_changes:bool = False
+
+
+##############################################
 
 def load_workflow(fpath="workflow_api.json"):
     logger.info(f'loading workflow: {fpath}')
@@ -90,19 +107,27 @@ description="i'm a bot."
 
 bot = commands.Bot(command_prefix='.', description=description, intents=intents)
 
-
 # to do: set bot status somewhere visible to the user
 @bot.event
 async def on_ready():
     logger.info(f'Logged in as {bot.user} (ID: {bot.user.id})')
 
-    if not hasattr(bot, '_workflow_registry'):
-        with open('workflow_registry.json') as f:
-            bot._workflow_registry = json.load(f)
-    if not hasattr(bot, '_base_workflow'):
-        fpath = bot._workflow_registry['default']
-        bot._base_workflow = load_workflow(fpath)
-    
+
+    def refresh_workflow_registry(bot):
+        if not hasattr(bot, '_workflow_registry'):
+            with open('workflow_registry.json') as f:
+                bot._workflow_registry = json.load(f)
+        #return bot
+
+    def init_load_default_workflow(bot):
+        if not hasattr(bot, '_base_workflow'):
+            fpath = bot._workflow_registry['default']
+            bot._base_workflow = load_workflow(fpath) # Todo: add a variable tracking the name of the current workflow for save/overwrite
+        #return bot
+
+
+    refresh_workflow_registry(bot)  # todo: get from server
+    init_load_default_workflow(bot) # todo: 1. prefer from server. 2.1 else fetch local workflow per env var 2.2 save to server
     curr_wait = 5
     max_wait = 60
     while not comfy_is_ready():
@@ -115,6 +140,7 @@ async def on_ready():
         ws.connect("ws://{}/ws?clientId={}".format(server_address, client_id))
         bot.ws_comfy = ws
     logger.info("Bot is ready and connected to the ComfyUI backend.")
+
 
 
 @bot.command()
@@ -195,16 +221,9 @@ def get_workflow(bot,workflow_name):
         return load_workflow(fpath), True
 
 
-
-
 @bot.command()
 async def describe(ctx, *, message=''):
-    #recs = [(v['class_type'], v['_meta']['title'],p,q) for v in w.values() for p,q in v['inputs'].items() if type(q)!=list]
-    #outstr = ""
-    #for rec in recs:
-    #    outstr += f"{rec[0]} - {rec[1]}.{rec[2]}: {rec[3]}\n"
     w,_ = get_workflow(bot, message)
-    #outstr = summarize_workflow(w)
     #w = fetch_saved_workflow(message)
     outstr = summarize_workflow(w)
     await ctx.reply(f"```{outstr}\n```")
