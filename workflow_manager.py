@@ -1,5 +1,6 @@
 from collections import UserDict #, UserString
 from copy import deepcopy
+import os
 #from dataclasses import dataclass
 from typing import Dict #, List, Union, Optional
 
@@ -123,6 +124,7 @@ class WorkflowManager:
     def __init__(self,
         workflow_registry: Dict[str, Workflow | None ], # {name, workflow}
         default_workflow_name: str = 'default',
+        active_workflow_name=None,
     ):
         if not workflow_registry:
             workflow_registry = {}
@@ -130,7 +132,8 @@ class WorkflowManager:
         #    active_workflow = default_workflow_name
         self.workflow_registry = workflow_registry
         self.default_workflow_name = default_workflow_name
-        self.set_active(default_workflow_name)
+        #self.set_active(default_workflow_name)
+        self.set_active(active_workflow_name)
 
     @property
     def active_workflow(self):
@@ -162,7 +165,14 @@ class WorkflowManager:
         self.workflow_registry[workflow.name] = workflow # code smell: potential for registry name and workflow name to desynch
 
     def set_active(self, wf_name):
+        if wf_name is None:
+            wf_name = os.environ.get('COMFYCLI_ACTIVE_WORKFLOW', self.default_workflow_name)
+        if wf_name not in self.workflow_registry:
+            self.refresh_workflow_registry()
+            if wf_name not in self.workflow_registry:
+                raise KeyError("Unable to locate a workflow named {wf_name}")
         self._active_workflow_name = wf_name
+        os.environ['COMFYCLI_ACTIVE_WORKFLOW'] = wf_name
 
     def commit(self):
         self.active_workflow.commit()
