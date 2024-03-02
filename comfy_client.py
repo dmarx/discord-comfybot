@@ -1,11 +1,11 @@
 
 # modified from https://github.com/comfyanonymous/ComfyUI/blob/master/script_examples/websockets_api_example.py
-
 import websocket
 import uuid
 import json
 import urllib.request
 import urllib.parse
+from urllib.parse import quote
 import os
 import requests
 
@@ -36,8 +36,8 @@ def restart_comfy():
     requests.get(f"http://{server_address}/manager/reboot")
 
 # untested
-def install_missing_custom_nodes():
-    requests.get(f"http://{server_address}/component/get_unresolved")
+#def install_missing_custom_nodes():
+#    requests.get(f"http://{server_address}/component/get_unresolved")
 
 ###################################################################
 
@@ -45,20 +45,78 @@ def get_model_zoo():
     response = requests.get(f"http://{server_address}/externalmodel/getlist?mode=cache")
     return response.json()
 
-def list_saved_workflows():
+#############################################################
+
+API_WORKFLOW_NAME_PREFIX = '_api_'
+
+def list_saved_workflows(api_only=False):
     response = requests.get(f"http://{server_address}/pysssss/workflows")
-    return response.json()
+    outv = response.json()
+    outv.sort()
+    if api_only:
+        prefix = API_WORKFLOW_NAME_PREFIX
+        outv = [w[len(prefix):] for w in outv if w.startswith(prefix)]
+    return outv
 
-from urllib.parse import quote
-
+# hmm... i don't think these are in API format :(
 def fetch_saved_workflow(name):
     response = requests.get(f"http://{server_address}/pysssss/workflows/{quote(name)}")
-    return response.json()
+    outv = response.json()
+    #logger.info(outv)
+    return outv
+
+from workflow_utils import summarize_workflow
+
+def summarize_saved_workflow(name):
+    # summarize_workflow() assumes api-only
+    prefix = API_WORKFLOW_NAME_PREFIX
+    if not name.startswith(prefix):
+        name = prefix + name
+
+    w = fetch_saved_workflow(name)
+    assert is_valid_api_workflow(w)
+    outstr = summarize_workflow(w)
+    pad="\n"
+    return f"{pad}{outstr}"
+
+def is_valid_api_workflow(w):
+    # lol i wish
+    # could probably at least check for absence of a key or that all values are conformant nodes
+    return True
 
 def save_workflow(name, workflow):
-    payload = {'name':name, 'workflow':workflow}
-    response = requests.post(f"http://{server_address}/pysssss/workflows", data=payload)
+    # if api_only:
+    #     assert is_valid_api_workflow(workflow)
+    #     prefix = API_WORKFLOW_NAME_PREFIX
+    #     if not name.startswith(prefix):
+    #         name = prefix + name
 
+    payload = {'name':name, 'workflow':workflow}
+    payload = json.dumps(payload)
+    logger.info(payload)
+    response = requests.post(f"http://{server_address}/pysssss/workflows", data=payload)
+    return response
+
+from pathlib import Path
+
+def _save_workflow(name, workflow=None, api_only=True):
+    prefix = ''
+    if api_only:
+        assert is_valid_api_workflow(workflow)
+        prefix = API_WORKFLOW_NAME_PREFIX
+    if not name.startswith(prefix):
+        name = prefix + name
+    if workflow is None:
+        workflow = f"{name}.json"
+    
+    assert Path(workflow).exists
+    with Path(workflow).open() as f:
+       w_data = json.load(f)
+    print(w_data)
+    logger.info(name)
+    response = save_workflow(name, w_data)
+    logger.info(response) # 500
+    logger.info(response.text)
 
 # sample payload: {"base":"SDXL","description":"(SDXL Verison) To view the preview in high quality while running samples in ComfyUI, you will need this model.","filename":"taesdxl_encoder.pth","name":"TAESDXL Encoder","reference":"https://github.com/madebyollin/taesd","save_path":"vae_approx","type":"TAESD","url":"https://github.com/madebyollin/taesd/raw/main/taesdxl_encoder.pth","installed":"False"}
 # sample zoo entry: {'base': 'efficient_sam', 'description': 'Install efficient_sam_s_gpu.jit into ComfyUI-YoloWorld-EfficientSAM', 'filename': 'efficient_sam_s_gpu.jit', 'name': 'efficient_sam_s_gpu.jit [ComfyUI-YoloWorld-EfficientSAM]', 'reference': 'https://huggingface.co/camenduru/YoloWorld-EfficientSAM/tree/main', 'save_path': 'custom_nodes/ComfyUI-YoloWorld-EfficientSAM', 'type': 'efficient_sam', 'url': 'https://huggingface.co/camenduru/YoloWorld-EfficientSAM/resolve/main/efficient_sam_s_gpu.jit', 'installed': 'False'}
@@ -122,3 +180,23 @@ def get_images(ws: websocket.WebSocket, prompt: dict):
             output_images[node_id] = images_output
 
     return output_images
+
+
+if __name__ == '__main__':
+    import fire
+
+    cli = {
+        'describe': summarize_saved_workflow,
+        'list':{
+            'models': list_available_checkpoints,
+            'loras': list_available_loras,
+            'workflows': list_saved_workflows,
+            },
+        'ready': comfy_is_ready,
+        'restart': restart_comfy,
+        'save': _save_workflow, # doesn't list after saving w/o a forced refresh i think
+    }
+
+    fire.Fire(cli)
+    
+    

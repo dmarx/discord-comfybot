@@ -16,40 +16,15 @@ from dotenv import load_dotenv
 import os
 from loguru import logger
 
-load_dotenv()
-
-application_id = os.environ.get('APPLICATION_ID')
-public_key = os.environ.get('PUBLIC_KEY')
-bot_user_token = os.environ.get('BOT_USER_TOKEN')
-
-##############################################
-
 import copy
 import json
 
-
-def load_workflow(fpath="workflow_api.json"):
-    logger.info(f'loading workflow: {fpath}')
-    with open(fpath) as f:
-        return json.load(f)
-
-def set_node_by_title(workflow, target_node, target_attr, value):
-    workflow = copy.deepcopy(workflow)
-    for node_id, node in workflow.items():
-        if node['_meta']['title'] == target_node:
-            node['inputs'][target_attr] = value
-    return workflow
-
-##############################################
-
-
-# https://discordpy.readthedocs.io/en/stable/ext/commands/commands.html
-# https://github.com/Rapptz/discord.py/blob/master/examples/basic_bot.py
 
 import io
 import random
 import websocket
 import time
+import string
 
 import discord
 from discord.ext import commands
@@ -64,9 +39,48 @@ from comfy_client import (
     list_available_loras,
     #restart_comfy,
     get_model_zoo,
+    #################
+    fetch_saved_workflow,
+    list_saved_workflows,
+    fetch_saved_workflow,
+)
+from workflow_utils import (
+    summarize_workflow,
+    prep_workflow,
+
 )
 
+from collections import Counter
 import requests
+
+
+load_dotenv()
+
+application_id = os.environ.get('APPLICATION_ID')
+public_key = os.environ.get('PUBLIC_KEY')
+bot_user_token = os.environ.get('BOT_USER_TOKEN')
+
+##############################################
+
+
+def load_workflow(fpath="workflow_api.json"):
+    logger.info(f'loading workflow: {fpath}')
+    with open(fpath) as f:
+        return json.load(f)
+
+
+def set_node_by_title(workflow, target_node, target_attr, value):
+    workflow = copy.deepcopy(workflow)
+    for node_id, node in workflow.items():
+        if node['_meta']['title'] == target_node:
+            node['inputs'][target_attr] = value
+    return workflow
+
+##############################################
+
+
+# https://discordpy.readthedocs.io/en/stable/ext/commands/commands.html
+# https://github.com/Rapptz/discord.py/blob/master/examples/basic_bot.py
 
 
 intents = discord.Intents.default()
@@ -102,11 +116,13 @@ async def on_ready():
         bot.ws_comfy = ws
     logger.info("Bot is ready and connected to the ComfyUI backend.")
 
+
 @bot.command()
 async def reset(ctx, *, message=''):
     fpath = bot._workflow_registry['default']
     bot._base_workflow = load_workflow(fpath)
     await ctx.reply("Workflow reset to default workflow")
+
 
 @bot.command()
 async def register(ctx, *, message=''):
@@ -137,12 +153,12 @@ async def register(ctx, *, message=''):
 def list_workflows_(bot):
     padleft = "* `"
     padright = "`\n"
+    #bot._workflow_registry
     msg = (
-        f"Available registered workflows:\n{''.join([padleft+k+padright for k in bot._workflow_registry])}"
+        f"Available registered workflows:\n```{'\n'.join(list_saved_workflows())}\n```"
     )
     return msg
 
-from collections import Counter
 
 @bot.command(name='list')
 async def list_(ctx, *, message=''):
@@ -150,7 +166,7 @@ async def list_(ctx, *, message=''):
         answer = list_available_checkpoints()
     elif message == 'loras':
         answer = list_available_loras()
-    elif message.startswith('zoo'):
+    elif message.startswith('zoo'): # todo: let user query installed from zoo
         kind = None
         if ' ' in message:
             _, kind = message.split()
@@ -164,11 +180,11 @@ async def list_(ctx, *, message=''):
                 if  (rec['type'] == kind):
                     answer += f"\n {rec['base']} \t {rec['name']}"
         if '\n' not in answer:
-            #answer = cnt.most_common()
-            answer = '\n'.join([f"{k}: {v}" for k,v in cnt.most_common()])
+            answer = '\n'.join([f"{k}: {v}" for k,v in cnt.items()])
     else:
         answer = list_workflows_(bot)
     await ctx.reply(answer)
+
 
 def get_workflow(bot,workflow_name):
     if workflow_name not in bot._workflow_registry:
@@ -177,65 +193,8 @@ def get_workflow(bot,workflow_name):
         fpath = bot._workflow_registry[workflow_name]
         return load_workflow(fpath), True
 
-import string
 
-def sanitize_title(title):
-    title= title.strip()
-    for g in string.punctuation:
-        if g in ('_','-'):
-            continue
-        title = title.replace(g, ' ')
-    title = title.title() 
-    title = title.replace(' ','')
-    return title
 
-def prep_workflow(workflow):
-    """
-    * sanitize titles so they conform to the titling requirements for parameter setting
-    """
-    # track node titles we've seen to enforce uniqueness
-    titles = set()
-    w = workflow
-    for v in w.values():
-        curr_title = v['_meta']['title']
-        curr_title = sanitize_title(curr_title)
-        while curr_title in titles:
-            curr_title += '-'
-        titles.add(curr_title)
-        v['_meta']['title'] = curr_title
-
-    for v in w.values():
-        curr_title = v['_meta']['title']
-        n = 0
-        while curr_title.endswith('-'):
-            curr_title = curr_title[:-1]
-            n+=1
-        if n:
-            curr_title += str(n+1)
-        v['_meta']['title'] = curr_title
-    return workflow
-
-def summarize_workflow(workflow):
-    outstr = "```"
-    for v in workflow.values():
-        #outstr += f"{v['class_type']} - '{v['_meta']['title']}'\n"
-        #n = len()
-        recs = []
-        for p, q in v['inputs'].items():
-            if type(q)==list:
-                continue
-            recs.append((p,q))
-        n = len(recs)
-        if not n:
-            continue
-        outstr += f"{v['class_type']} - '{v['_meta']['title']}'\n"
-        for k,v in recs:
-            n-=1
-            pad = "├──" if n>0 else "└──"
-            outstr += f"  {pad} {k}: {v}\n"
-        outstr+="\n"
-    outstr+="```"
-    return outstr
 
 @bot.command()
 async def describe(ctx, *, message=''):
@@ -244,10 +203,10 @@ async def describe(ctx, *, message=''):
     #for rec in recs:
     #    outstr += f"{rec[0]} - {rec[1]}.{rec[2]}: {rec[3]}\n"
     w,_ = get_workflow(bot, message)
+    #outstr = summarize_workflow(w)
+    #w = fetch_saved_workflow(message)
     outstr = summarize_workflow(w)
-    await ctx.reply(outstr)
-
-
+    await ctx.reply(f"```{outstr}\n```)
 
 
 @bot.command(name='set')
@@ -263,6 +222,7 @@ async def set_(ctx, *, message=''):
         await ctx.reply("Default workflow updated.")
     else:
         await ctx.reply(f"There's no workflow registered to the name {workflow_name}.\n{list_workflows_(bot)}")
+
 
 @bot.command()
 async def dream(ctx, *, message=''):

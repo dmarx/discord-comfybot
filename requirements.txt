@@ -1,3 +1,5 @@
+#click
+fire
 discord.py
 loguru
 python-dotenv
