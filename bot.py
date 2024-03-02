@@ -154,8 +154,9 @@ def list_workflows_(bot):
     padleft = "* `"
     padright = "`\n"
     #bot._workflow_registry
+    newline = "\n"
     msg = (
-        f"Available registered workflows:\n```{'\n'.join(list_saved_workflows())}\n```"
+        f"Available registered workflows:{newline}```{newline.join(list_saved_workflows())}{newline}```"
     )
     return msg
 
@@ -206,7 +207,7 @@ async def describe(ctx, *, message=''):
     #outstr = summarize_workflow(w)
     #w = fetch_saved_workflow(message)
     outstr = summarize_workflow(w)
-    await ctx.reply(f"```{outstr}\n```)
+    await ctx.reply(f"```{outstr}\n```")
 
 
 @bot.command(name='set')

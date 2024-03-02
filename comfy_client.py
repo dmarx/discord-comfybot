@@ -1,17 +1,19 @@
 
 # modified from https://github.com/comfyanonymous/ComfyUI/blob/master/script_examples/websockets_api_example.py
-import websocket
-import uuid
+from dotenv import load_dotenv
 import json
+from loguru import logger
+import os
+import requests
 import urllib.request
 import urllib.parse
 from urllib.parse import quote
-import os
-import requests
+import uuid
+import websocket
 
-from loguru import logger
+# part of this package
+from workflow_utils import summarize_workflow
 
-from dotenv import load_dotenv
 
 load_dotenv()
 
@@ -64,8 +66,6 @@ def fetch_saved_workflow(name):
     outv = response.json()
     #logger.info(outv)
     return outv
-
-from workflow_utils import summarize_workflow
 
 def summarize_saved_workflow(name):
     # summarize_workflow() assumes api-only
