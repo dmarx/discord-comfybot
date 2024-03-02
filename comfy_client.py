@@ -12,7 +12,7 @@ import uuid
 import websocket
 
 # part of this package
-from workflow_utils import summarize_workflow
+from workflow_utils import summarize_workflow, is_valid_api_workflow
 
 
 load_dotenv()
@@ -79,10 +79,6 @@ def summarize_saved_workflow(name):
     pad="\n"
     return f"{pad}{outstr}"
 
-def is_valid_api_workflow(w):
-    # lol i wish
-    # could probably at least check for absence of a key or that all values are conformant nodes
-    return True
 
 def save_workflow(name, workflow):
     # if api_only:
@@ -181,7 +177,7 @@ def get_images(ws: websocket.WebSocket, prompt: dict):
 
     return output_images
 
-
+# TODO: move cli stuff to separate module so we can invoke WorkflowManager w/o circular imports
 if __name__ == '__main__':
     import fire
 

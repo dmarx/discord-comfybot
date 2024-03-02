@@ -1,5 +1,21 @@
 import string
 
+#######################################
+
+def set_node_by_title(workflow, target_node, target_attr, value):
+    workflow = copy.deepcopy(workflow)
+    for node_id, node in workflow.items():
+        if node['_meta']['title'] == target_node:
+            node['inputs'][target_attr] = value
+    return workflow
+
+
+def is_valid_api_workflow(w):
+    # lol i wish
+    # could probably at least check for absence of a key or that all values are conformant nodes
+    return True
+
+########################################
 
 def sanitize_title(title):
     title= title.strip()

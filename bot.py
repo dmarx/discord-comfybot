@@ -47,11 +47,10 @@ from comfy_client import (
 from workflow_utils import (
     summarize_workflow,
     prep_workflow,
-
+    set_node_by_title,
 )
 
-from collections import Counter, UserDict
-from dataclasses import dataclass
+from collections import Counter
 import requests
 
 
@@ -63,21 +62,6 @@ bot_user_token = os.environ.get('BOT_USER_TOKEN')
 
 ##############################################
 
-from typing import Dict, List, Union, Optional
-
-class Workflow(UserDict):
-    # TODO: validate api confmity on init
-    def __str__(self):
-        return json.dumps(self)
-
-@dataclass
-class BotDB:
-    workflow_registry: Dict[str, Workflow | None ] # {name, workflow}
-    default_workflow_name: str = 'default'
-    active_workflow: Workflow = None
-    active_workflow_has_uncommitted_changes:bool = False
-
-
 ##############################################
 
 def load_workflow(fpath="workflow_api.json"):
@@ -86,12 +70,7 @@ def load_workflow(fpath="workflow_api.json"):
         return json.load(f)
 
 
-def set_node_by_title(workflow, target_node, target_attr, value):
-    workflow = copy.deepcopy(workflow)
-    for node_id, node in workflow.items():
-        if node['_meta']['title'] == target_node:
-            node['inputs'][target_attr] = value
-    return workflow
+
 
 ##############################################
 
