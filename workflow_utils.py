@@ -1,5 +1,7 @@
 import string
 
+API_WORKFLOW_NAME_PREFIX = '_api_'
+
 #######################################
 
 def set_node_by_title(workflow, target_node, target_attr, value):

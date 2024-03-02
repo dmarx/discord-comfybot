@@ -22,8 +22,9 @@ from comfy_client import (
     save_workflow,
 )
 from workflow_utils import (
+    #API_WORKFLOW_NAME_PREFIX,
     is_valid_api_workflow,
-    # summarize_workflow,
+    summarize_workflow,
     # prep_workflow,
     # set_node_by_title,
 )
@@ -37,16 +38,37 @@ class Workflow(UserDict):
             data = {}
         #assert is_valid_api_workflow(data)
         self.name = name
-        self.data = data
-        self._baseline = deepcopy(self.data)
+        self._data = data
+        self._baseline = deepcopy(self._data)
         self._uncommitted_changes = False
+        self._default_wf_name = 'default' # fallback source for _baseline
+    
+    @property
+    def data(self):
+        if not self._data:
+            self.fetch()
+        return self._data
+    
+    @data.setter
+    def data(self, other):
+        if isinstance(other, Workflow):
+            self._data = deepcopy(other.data)
+        elif isinstance(other, str):
+            self._data = deepcopy(Workflow(name=other).data)
+        elif isinstance(other, dict):
+            self._data = deepcopy(other)
+        else:
+            raise NotImplementedError
+        
+        self._uncommitted_changes = True
 
     def reset(self):
-         self.data = deepcopy(self._baseline)
+         self._data = deepcopy(self._baseline)
+         self._uncommitted_changes = False
     
     def commit(self):
-        if not self._uncommitted_changes:
-            return
+        #if not self._uncommitted_changes:
+        #    return
         response = save_workflow(self.name, self.data)
         happy_with_status_code = True # todo: check response status code here. 200 or 201 I think?
         if happy_with_status_code:
@@ -56,24 +78,36 @@ class Workflow(UserDict):
             # emit some kind of alert to the user. raise an exception or throw a warning.
             pass
     
+    def summarize(self):
+        return summarize_workflow(self.data)
+    
+    def fetch(self):
+        # populates lazy loading
+        data = fetch_saved_workflow(self.name)
+        if is_valid_api_workflow(data):
+            self._data=data
+            if not self._baseline:
+                self._baseline = deepcopy(self._data)
+        else:
+            # raise custom warning or exception?
+            pass
+    
     def __getitem__(self, k):
-        if not self.data:
-            # lazy loading
-            data = fetch_saved_workflow(self.name)
-            if is_valid_api_workflow(data):
-                self.data=data
-            else:
-                # raise custom warning or exception?
-                pass
+        #if not self.data:
+        #    self.fetch()
         return self.data[k]
 
     def __setitem__(self, k, v_new):
+        #if not self.data:
+        #    self.fetch()
         v_current = self.data[k]
         if v_current != v_new:
             self.data[k] = v_new
             self._uncommitted_changes = True
 
     def __str__(self):
+        #if not self.data:
+        #    self.fetch()
         return json.dumps(self.data)
 
 
@@ -132,5 +166,3 @@ class WorkflowManager:
 
     def commit(self):
         self.active_workflow.commit()
-
-
