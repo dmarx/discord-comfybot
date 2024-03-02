@@ -40,15 +40,17 @@ from comfy_client import (
     #restart_comfy,
     get_model_zoo,
     #################
-    fetch_saved_workflow,
+    #fetch_saved_workflow,
     list_saved_workflows,
-    fetch_saved_workflow,
+    #fetch_saved_workflow,
 )
 from workflow_utils import (
     summarize_workflow,
     prep_workflow,
     set_node_by_title,
 )
+
+from workflow_manager import WorkflowManager, Workflow
 
 from collections import Counter
 import requests
@@ -91,22 +93,21 @@ bot = commands.Bot(command_prefix='.', description=description, intents=intents)
 async def on_ready():
     logger.info(f'Logged in as {bot.user} (ID: {bot.user.id})')
 
+    # def refresh_workflow_registry(bot):
+    #     if not hasattr(bot, '_workflow_registry'):
+    #         with open('workflow_registry.json') as f:
+    #             bot._workflow_registry = json.load(f)
+    #     #return bot
 
-    def refresh_workflow_registry(bot):
-        if not hasattr(bot, '_workflow_registry'):
-            with open('workflow_registry.json') as f:
-                bot._workflow_registry = json.load(f)
-        #return bot
-
-    def init_load_default_workflow(bot):
-        if not hasattr(bot, '_base_workflow'):
-            fpath = bot._workflow_registry['default']
-            bot._base_workflow = load_workflow(fpath) # Todo: add a variable tracking the name of the current workflow for save/overwrite
-        #return bot
+    # def init_load_default_workflow(bot):
+    #     if not hasattr(bot, '_base_workflow'):
+    #         fpath = bot._workflow_registry['default']
+    #         bot._base_workflow = load_workflow(fpath) # Todo: add a variable tracking the name of the current workflow for save/overwrite
+    #     #return bot
 
 
-    refresh_workflow_registry(bot)  # todo: get from server
-    init_load_default_workflow(bot) # todo: 1. prefer from server. 2.1 else fetch local workflow per env var 2.2 save to server
+    #refresh_workflow_registry(bot)  # todo: get from server
+    #init_load_default_workflow(bot) # todo: 1. prefer from server. 2.1 else fetch local workflow per env var 2.2 save to server
     curr_wait = 5
     max_wait = 60
     while not comfy_is_ready():
@@ -114,45 +115,74 @@ async def on_ready():
         curr_wait = min(curr_wait, max_wait)
         logger.info(f"Unable to reach ComfyUI. Retrying in {curr_wait} seconds")
         time.sleep(curr_wait)
+
     if not hasattr(bot, 'ws_comfy'):
         ws = websocket.WebSocket()
         ws.connect("ws://{}/ws?clientId={}".format(server_address, client_id))
         bot.ws_comfy = ws
-    logger.info("Bot is ready and connected to the ComfyUI backend.")
 
+    bot.workflow_mgr =None
+    try:
+        bot.workflow_mgr = WorkflowManager()
+        msg = "Bot is ready and connected to the ComfyUI backend."
+        logger.info(msg)
+        #await ctx.reply(msg)
+    except KeyError:
+        logger.info(
+            "Default workflow not registered. Please set a 'default' workflow by "
+            "invoking `.register default` with the workflow attached."
+        )
 
 
 @bot.command()
 async def reset(ctx, *, message=''):
-    fpath = bot._workflow_registry['default']
-    bot._base_workflow = load_workflow(fpath)
-    await ctx.reply("Workflow reset to default workflow")
+    #fpath = bot._workflow_registry['default']
+    #bot._base_workflow = load_workflow(fpath)
+    #bot.workflow_mgr.reset()
+    bot.workflow_mgr.active_workflow.reset()
+    #bot.workflow_mgr.activate_default()
+    #await ctx.reply("Workflow reset to default workflow")
+    #await ctx.reply("Workflow reset to default workflow")
+    await ctx.reply("Workflow reset to its base state.")
 
+
+async def register_from_attachment(ctx, workflow_name):
+    workflow_url = ctx.message.attachments[0]
+    response = requests.get(workflow_url)
+    #_, fname = response.headers['Content-Disposition'].split('filename=')
+    #fname = fname[1:-1] # remove quotes
+    fname = f"{workflow_name}.json"
+    new_workflow = response.json()
+    logger.info(new_workflow)
+    logger.info(type(new_workflow))
+    new_workflow = prep_workflow(new_workflow)
+    #with open(fname, 'w') as f:
+    #    json.dump(new_workflow, f)
+    #bot._workflow_registry[workflow_name] = fname
+    wf=Workflow(name=workflow_name, data=new_workflow)
+    if bot.workflow_mgr is not None:
+        bot.workflow_mgr.register(workflow=wf)
+    else:
+        wf.commit()
+        try:
+            bot.workflow_mgr = WorkflowManager()
+        except KeyError:
+            logger.info("Default workflow not registered. Please register a 'default' workflow")
+            await ctx.reply("Please register a 'default' workflow")
+
+
+    outstr = summarize_workflow(new_workflow)
+    await ctx.reply(outstr)
 
 @bot.command()
 async def register(ctx, *, message=''):
-    workflow_name = message
     if not message:
         await ctx.reply("Please provide a name to register the workflow to: `.register workflowName`")
-    elif not ctx.message.attachments:
-        await ctx.reply("Please attach a workflow to set it as the new default workflow.")
-    elif workflow_name in bot._workflow_registry:
-        await ctx.reply(f"There's already a workflow registered to the name {workflow_name}. Please pick a different name.")
-    else:
-        
-        workflow_url = ctx.message.attachments[0]
-        response = requests.get(workflow_url)
-        #_, fname = response.headers['Content-Disposition'].split('filename=')
-        #fname = fname[1:-1] # remove quotes
-        fname = f"{workflow_name}.json"
-        new_workflow = response.json()
-        new_workflow = prep_workflow(new_workflow)
-        with open(fname, 'w') as f:
-            json.dump(new_workflow, f)
-        bot._workflow_registry[workflow_name] = fname
+    workflow_name = message
 
-        outstr = summarize_workflow(new_workflow)
-        await ctx.reply(outstr)
+    if ctx.message.attachments:
+        await register_from_attachment(ctx, workflow_name)
+
 
 
 def list_workflows_(bot):
@@ -189,22 +219,24 @@ async def list_(ctx, *, message=''):
             answer = '\n'.join([f"{k}: {v}" for k,v in cnt.items()])
     else:
         answer = list_workflows_(bot)
+        #answer = bot.workflow_mgr.workflow_registry.keys()
     await ctx.reply(answer)
 
 
-def get_workflow(bot,workflow_name):
-    if workflow_name not in bot._workflow_registry:
-        return copy.deepcopy(bot._base_workflow), False
-    else:
-        fpath = bot._workflow_registry[workflow_name]
-        return load_workflow(fpath), True
+# def get_workflow(bot,workflow_name):
+#     if workflow_name not in bot._workflow_registry:
+#         return copy.deepcopy(bot._base_workflow), False
+#     else:
+#         fpath = bot._workflow_registry[workflow_name]
+#         return load_workflow(fpath), True
 
 
 @bot.command()
 async def describe(ctx, *, message=''):
-    w,_ = get_workflow(bot, message)
+    #w,_ = get_workflow(bot, message)
     #w = fetch_saved_workflow(message)
-    outstr = summarize_workflow(w)
+    #outstr = summarize_workflow(w)
+    outstr = bot.workflow_mgr.active_workflow.summarize()
     await ctx.reply(f"```{outstr}\n```")
 
 
@@ -214,13 +246,28 @@ async def set_(ctx, *, message=''):
     if not workflow_name:
         await ctx.reply(f"No workflow name provided. \n{list_workflows_(bot)}")
         return
-    new_workflow, is_new = get_workflow(bot, workflow_name)
-    if is_new:
-        logger.info(f"new workflow:\n\n{new_workflow}\n\n")
-        bot._base_workflow = new_workflow
-        await ctx.reply("Default workflow updated.")
-    else:
+    # new_workflow, is_new = get_workflow(bot, workflow_name)
+    try:
+        bot.workflow_mgr.set_active(workflow_name)
+        addendum = ""
+        if bot.workflow_mgr.active_workflow._uncommitted_changes:
+            addendum = (
+                "\nNB: Workflow has uncommitted changes.\n"
+                "* To roll-back to baseline, invoke the `.reset` command.\n"
+                f"* To commit changes (overwriting the saved workflow named `{bot.workflow_mgr.active_workflow.name}`),"
+                " invoke the `.register` command.\n"
+                "* If you don't want to overwrite the saved workflow,"
+                "pass a new name to register the active workflow to: `.register name`"
+            )
+        await ctx.reply(f"Active workflow switched to {workflow_name}.{addendum}")
+    except KeyError:
         await ctx.reply(f"There's no workflow registered to the name {workflow_name}.\n{list_workflows_(bot)}")
+    # if is_new:
+    #     logger.info(f"new workflow:\n\n{new_workflow}\n\n")
+    #     bot._base_workflow = new_workflow
+    #     await ctx.reply("Default workflow updated.")
+    # else:
+    #     await ctx.reply(f"There's no workflow registered to the name {workflow_name}.\n{list_workflows_(bot)}")
 
 
 @bot.command()

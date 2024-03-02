@@ -122,7 +122,7 @@ class WorkflowManager:
     * utilities for fetching and saving workflows
     """
     def __init__(self,
-        workflow_registry: Dict[str, Workflow | None ], # {name, workflow}
+        workflow_registry: Dict[str, Workflow | None ] = None, # {name, workflow}
         default_workflow_name: str = 'default',
         active_workflow_name=None,
     ):
@@ -170,7 +170,7 @@ class WorkflowManager:
         if wf_name not in self.workflow_registry:
             self.refresh_workflow_registry()
             if wf_name not in self.workflow_registry:
-                raise KeyError("Unable to locate a workflow named {wf_name}")
+                raise KeyError(f"Unable to locate a workflow named {wf_name}")
         self._active_workflow_name = wf_name
         os.environ['COMFYCLI_ACTIVE_WORKFLOW'] = wf_name
 
