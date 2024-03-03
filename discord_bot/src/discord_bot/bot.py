@@ -292,4 +292,8 @@ async def dream(ctx, *, message=''):
 #     #except (ConnectionRefusedError, requests.exceptions.ConnectionError):    
 #     await on_ready()
 
-bot.run(bot_user_token)
+def main():
+    bot.run(bot_user_token)
+
+if __name__ == '__main__':
+    main()
