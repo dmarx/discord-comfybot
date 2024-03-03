@@ -58,10 +58,13 @@ def get_model_zoo():
 def list_saved_workflows(api_only=False):
     response = requests.get(f"http://{server_address}/pysssss/workflows")
     outv = response.json()
+    logger.info(outv)
     outv.sort()
     if api_only:
         prefix = API_WORKFLOW_NAME_PREFIX
-        outv = [w[len(prefix):] for w in outv if w.startswith(prefix)]
+        #outv = [w[len(prefix):] for w in outv if w.startswith(prefix)]
+        outv = [w for w in outv if w.startswith(prefix)]
+    logger.info(outv)
     return outv
 
 # hmm... i don't think these are in API format :(

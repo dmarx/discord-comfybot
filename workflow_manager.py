@@ -29,7 +29,9 @@ from workflow_utils import (
     # prep_workflow,
     # set_node_by_title,
 )
+from workflow_utils import API_WORKFLOW_NAME_PREFIX as api_prefix
 
+from loguru import logger
 
 class Workflow(UserDict):
     def __init__(self, name:str, data:dict=None):
@@ -123,7 +125,7 @@ class WorkflowManager:
     """
     def __init__(self,
         workflow_registry: Dict[str, Workflow | None ] = None, # {name, workflow}
-        default_workflow_name: str = 'default',
+        default_workflow_name: str = f"{api_prefix}default",
         active_workflow_name=None,
     ):
         if not workflow_registry:
@@ -137,10 +139,11 @@ class WorkflowManager:
 
     @property
     def active_workflow(self):
-        return self.workflow_registry[self.active_workflow_name]
+        return self.workflow_registry[self._active_workflow_name]
     
     def refresh_workflow_registry(self):
-        self.data = {wf_name:Workflow(wf_name) for wf_name in list_saved_workflows(api_only=True)}
+        #self.data = {wf_name:Workflow(wf_name) for wf_name in list_saved_workflows(api_only=True)}
+        self.workflow_registry = {wf_name:Workflow(wf_name) for wf_name in list_saved_workflows(api_only=True)}
 
     def reset(self, all=False):
         """
@@ -169,6 +172,7 @@ class WorkflowManager:
             wf_name = os.environ.get('COMFYCLI_ACTIVE_WORKFLOW', self.default_workflow_name)
         if wf_name not in self.workflow_registry:
             self.refresh_workflow_registry()
+            logger.info(self.workflow_registry)
             if wf_name not in self.workflow_registry:
                 raise KeyError(f"Unable to locate a workflow named {wf_name}")
         self._active_workflow_name = wf_name
