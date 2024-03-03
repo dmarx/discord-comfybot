@@ -340,7 +340,7 @@ async def dream(ctx, *, message=''):
 
     for k, rec in args['node_args'].items():
         workflow = set_node_by_title(workflow, rec['node_name'], rec['target_attr'], rec['value'])
-    logger.info(workflow)
+    #logger.info(workflow)
 
     images = get_images(bot.ws_comfy, workflow.data)
     logger.debug(len(images))

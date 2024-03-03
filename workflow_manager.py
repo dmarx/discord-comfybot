@@ -172,7 +172,7 @@ class WorkflowManager:
             wf_name = os.environ.get('COMFYCLI_ACTIVE_WORKFLOW', self.default_workflow_name)
         if wf_name not in self.workflow_registry:
             self.refresh_workflow_registry()
-            logger.info(self.workflow_registry)
+            #logger.info(self.workflow_registry)
             if wf_name not in self.workflow_registry:
                 raise KeyError(f"Unable to locate a workflow named {wf_name}")
         self._active_workflow_name = wf_name
