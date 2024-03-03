@@ -1,4 +1,5 @@
 import string
+import copy
 
 API_WORKFLOW_NAME_PREFIX = '_api_'
 

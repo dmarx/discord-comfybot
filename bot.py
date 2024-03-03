@@ -270,8 +270,10 @@ async def describe(ctx, *, message=''):
     #w,_ = get_workflow(bot, message)
     #w = fetch_saved_workflow(message)
     #outstr = summarize_workflow(w)
-    outstr = bot.workflow_mgr.active_workflow.summarize()
-    await ctx.reply(f"```{outstr}\n```")
+    header = f"Active workflow: **{bot.workflow_mgr.active_workflow.name[len(api_prefix):]}**"
+    wf_descr = bot.workflow_mgr.active_workflow.summarize()
+    outstr = header + "\n```\n" + wf_descr + "\n```"
+    await ctx.reply(outstr)
 
 
 @bot.command(name='set')
@@ -321,10 +323,12 @@ async def dream(ctx, *, message=''):
     # for reply
     simple_args = {k:v['value'] for k,v in args['node_args'].items()}
 
-    workflow = copy.deepcopy(bot._base_workflow)
+    #workflow = copy.deepcopy(bot._base_workflow)
+    workflow = bot.workflow_mgr.active_workflow
     if 'workflow' in args['other_args']:
         target_workflow = args['other_args']['workflow']
-        workflow, success = get_workflow(bot, target_workflow)
+        #workflow, success = get_workflow(bot, target_workflow)
+        workflow = bot.workflow_mgr.workflow_registry[target_workflow]
         if success:
             logger.info(f"temporarily using workflow {target_workflow}")
         else:
@@ -338,7 +342,7 @@ async def dream(ctx, *, message=''):
         workflow = set_node_by_title(workflow, rec['node_name'], rec['target_attr'], rec['value'])
     logger.info(workflow)
 
-    images = get_images(bot.ws_comfy, workflow)
+    images = get_images(bot.ws_comfy, workflow.data)
     logger.debug(len(images))
     im_data = list(images.values())[0][0]
     f = io.BytesIO(im_data)
