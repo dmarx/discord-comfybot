@@ -1,22 +1,12 @@
-from collections import UserDict #, UserString
+from collections import UserDict
 from copy import deepcopy
 import os
-#from dataclasses import dataclass
-from typing import Dict #, List, Union, Optional
+from typing import Dict
 
 
 import json
 
 from comfy_client import (
-    # get_images,
-    # server_address,
-    # client_id,
-    # comfy_is_ready,
-    # list_available_checkpoints,
-    # list_available_loras,
-    # #restart_comfy,
-    # get_model_zoo,
-    # #################
     fetch_saved_workflow,
     list_saved_workflows,
     fetch_saved_workflow,
@@ -35,8 +25,6 @@ from loguru import logger
 
 class Workflow(UserDict):
     def __init__(self, name:str, data:dict=None):
-        #if not data:
-        #    data = fetch_saved_workflow(name)
         if not data:
             data = {}
         #assert is_valid_api_workflow(data)
@@ -44,7 +32,7 @@ class Workflow(UserDict):
         self._data = data
         self._baseline = deepcopy(self._data)
         self._uncommitted_changes = False
-        self._default_wf_name = 'default' # fallback source for _baseline
+        self._default_wf_name = f"{api_prefix}default" # fallback source for _baseline ... ami even using this?
     
     @property
     def data(self):
@@ -96,26 +84,18 @@ class Workflow(UserDict):
             pass
     
     def __getitem__(self, k):
-        #if not self.data:
-        #    self.fetch()
         return self.data[k]
 
     def __setitem__(self, k, v_new):
-        #if not self.data:
-        #    self.fetch()
         v_current = self.data[k]
         if v_current != v_new:
             self.data[k] = v_new
             self._uncommitted_changes = True
 
     def __str__(self):
-        #if not self.data:
-        #    self.fetch()
         return json.dumps(self.data)
 
 
-# todo: instead of metadata on the bot, make a WorkflowManager class and move it to workflow_utils. 
-# can then just attach all the relevant functions as methods
 class WorkflowManager:
     """
     Interface for managing workflows.
@@ -130,11 +110,8 @@ class WorkflowManager:
     ):
         if not workflow_registry:
             workflow_registry = {}
-        #if not active_workflow:
-        #    active_workflow = default_workflow_name
         self.workflow_registry = workflow_registry
         self.default_workflow_name = default_workflow_name
-        #self.set_active(default_workflow_name)
         self.set_active(active_workflow_name)
 
     @property
@@ -172,7 +149,6 @@ class WorkflowManager:
             wf_name = os.environ.get('COMFYCLI_ACTIVE_WORKFLOW', self.default_workflow_name)
         if wf_name not in self.workflow_registry:
             self.refresh_workflow_registry()
-            #logger.info(self.workflow_registry)
             if wf_name not in self.workflow_registry:
                 raise KeyError(f"Unable to locate a workflow named {wf_name}")
         self._active_workflow_name = wf_name

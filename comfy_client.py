@@ -13,8 +13,6 @@ import websocket
 
 
 from workflow_utils import (
-    #summarize_workflow,
-    #is_valid_api_workflow,
     API_WORKFLOW_NAME_PREFIX,
 )
 
@@ -53,8 +51,6 @@ def get_model_zoo():
 
 #############################################################
 
-#API_WORKFLOW_NAME_PREFIX = '_api_'
-
 def list_saved_workflows(api_only=False):
     response = requests.get(f"http://{server_address}/pysssss/workflows")
     outv = response.json()
@@ -74,9 +70,6 @@ def fetch_saved_workflow(name):
     #logger.info(outv)
     return outv
 
-
-
-
 def save_workflow(name, workflow):
     # if api_only:
     #     assert is_valid_api_workflow(workflow)
@@ -89,7 +82,6 @@ def save_workflow(name, workflow):
     logger.info(payload)
     response = requests.post(f"http://{server_address}/pysssss/workflows", data=payload)
     return response
-
 
 
 # sample payload: {"base":"SDXL","description":"(SDXL Verison) To view the preview in high quality while running samples in ComfyUI, you will need this model.","filename":"taesdxl_encoder.pth","name":"TAESDXL Encoder","reference":"https://github.com/madebyollin/taesd","save_path":"vae_approx","type":"TAESD","url":"https://github.com/madebyollin/taesd/raw/main/taesdxl_encoder.pth","installed":"False"}

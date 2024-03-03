@@ -60,8 +60,6 @@ def prep_workflow(workflow):
 def summarize_workflow(workflow):
     outstr=''
     for v in workflow.values():
-        #outstr += f"{v['class_type']} - '{v['_meta']['title']}'\n"
-        #n = len()
         recs = []
         for p, q in v['inputs'].items():
             if type(q)==list:

@@ -300,12 +300,6 @@ async def set_(ctx, *, message=''):
         await ctx.reply(f"Active workflow switched to {workflow_name[len(api_prefix):]}.{addendum}")
     except KeyError:
         await ctx.reply(f"There's no workflow registered to the name {workflow_name[len(api_prefix):]}.\n{list_workflows_(bot)}")
-    # if is_new:
-    #     logger.info(f"new workflow:\n\n{new_workflow}\n\n")
-    #     bot._base_workflow = new_workflow
-    #     await ctx.reply("Default workflow updated.")
-    # else:
-    #     await ctx.reply(f"There's no workflow registered to the name {workflow_name}.\n{list_workflows_(bot)}")
 
 
 @bot.command()
@@ -323,15 +317,15 @@ async def dream(ctx, *, message=''):
     # for reply
     simple_args = {k:v['value'] for k,v in args['node_args'].items()}
 
-    #workflow = copy.deepcopy(bot._base_workflow)
     workflow = bot.workflow_mgr.active_workflow
     if 'workflow' in args['other_args']:
         target_workflow = args['other_args']['workflow']
-        #workflow, success = get_workflow(bot, target_workflow)
-        workflow = bot.workflow_mgr.workflow_registry[target_workflow]
-        if success:
+        if not target_workflow.startswith(api_prefix):
+            target_workflow = api_prefix + target_workflow
+        try:
+            workflow = bot.workflow_mgr.workflow_registry[target_workflow]
             logger.info(f"temporarily using workflow {target_workflow}")
-        else:
+        except KeyError:
             await ctx.reply(
                 f"There's no workflow registered to the name {target_workflow}. "
                 f"\n{list_workflows_(bot)}"
@@ -340,7 +334,6 @@ async def dream(ctx, *, message=''):
 
     for k, rec in args['node_args'].items():
         workflow = set_node_by_title(workflow, rec['node_name'], rec['target_attr'], rec['value'])
-    #logger.info(workflow)
 
     images = get_images(bot.ws_comfy, workflow.data)
     logger.debug(len(images))
