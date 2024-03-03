@@ -2,29 +2,17 @@
 # TODO:
 # * handle failed websocket connection
 # * report errors back to user
-# * make workflow registry persistent
-#   - need to update the registry .json
-#   - even simpler: just have a fucking dedicated folder
-# * .set for updating values in the active workflow
-# * .save/.commit/.whatever to update the registry with the current settings
-#    - should also have the option to save to a new name
-#    - feels like a lot of what i'm doing here is "workflow management"
 # * maybe some special command attached to a workflow that just does something simple with the civit.ai nodes so people can download models
 #   -  stuff like this should probably just be a different worker or somerthing
 
-from dotenv import load_dotenv
 import os
-from loguru import logger
-
-import copy
-import json
-
-
 import io
 import random
-import websocket
 import time
-import string
+
+from dotenv import load_dotenv
+from loguru import logger
+import websocket
 
 import discord
 from discord.ext import commands
@@ -37,12 +25,7 @@ from comfy_client import (
     comfy_is_ready,
     list_available_checkpoints,
     list_available_loras,
-    #restart_comfy,
     get_model_zoo,
-    #################
-    #fetch_saved_workflow,
-    list_saved_workflows,
-    #fetch_saved_workflow,
 )
 from workflow_utils import (
     summarize_workflow,
@@ -64,19 +47,6 @@ public_key = os.environ.get('PUBLIC_KEY')
 bot_user_token = os.environ.get('BOT_USER_TOKEN')
 
 ##############################################
-
-##############################################
-
-# def load_workflow(fpath="workflow_api.json"):
-#     logger.info(f'loading workflow: {fpath}')
-#     with open(fpath) as f:
-#         return json.load(f)
-
-
-
-
-##############################################
-
 
 # https://discordpy.readthedocs.io/en/stable/ext/commands/commands.html
 # https://github.com/Rapptz/discord.py/blob/master/examples/basic_bot.py
@@ -102,21 +72,6 @@ async def reboot_manager(bot, ctx):
 async def on_ready():
     logger.info(f'Logged in as {bot.user} (ID: {bot.user.id})')
 
-    # def refresh_workflow_registry(bot):
-    #     if not hasattr(bot, '_workflow_registry'):
-    #         with open('workflow_registry.json') as f:
-    #             bot._workflow_registry = json.load(f)
-    #     #return bot
-
-    # def init_load_default_workflow(bot):
-    #     if not hasattr(bot, '_base_workflow'):
-    #         fpath = bot._workflow_registry['default']
-    #         bot._base_workflow = load_workflow(fpath) # Todo: add a variable tracking the name of the current workflow for save/overwrite
-    #     #return bot
-
-
-    #refresh_workflow_registry(bot)  # todo: get from server
-    #init_load_default_workflow(bot) # todo: 1. prefer from server. 2.1 else fetch local workflow per env var 2.2 save to server
     curr_wait = 5
     max_wait = 60
     while not comfy_is_ready():
@@ -132,27 +87,20 @@ async def on_ready():
 
     bot.workflow_mgr =None
     #reboot_manager(bot, ctx)
-    #try:
-    bot.workflow_mgr = WorkflowManager()
-    msg = "Bot is ready and connected to the ComfyUI backend."
-    logger.info(msg)
+    try:
+        bot.workflow_mgr = WorkflowManager()
+        msg = "Bot is ready and connected to the ComfyUI backend."
+        logger.info(msg)
         #await ctx.reply(msg)
-    # except KeyError:
-    #     logger.info(
-    #         "Default workflow not registered. Please set a 'default' workflow by "
-    #         "invoking `.register default` with the workflow attached."
-    #     )
-
+    except KeyError:
+        logger.info(
+            "Default workflow not registered. Please set a 'default' workflow by "
+            "invoking `.register default` with the workflow attached."
+        )
 
 @bot.command()
 async def reset(ctx, *, message=''):
-    #fpath = bot._workflow_registry['default']
-    #bot._base_workflow = load_workflow(fpath)
-    #bot.workflow_mgr.reset()
     bot.workflow_mgr.active_workflow.reset()
-    #bot.workflow_mgr.activate_default()
-    #await ctx.reply("Workflow reset to default workflow")
-    #await ctx.reply("Workflow reset to default workflow")
     await ctx.reply("Workflow reset to its base state.")
 
 @bot.command()
@@ -160,21 +108,15 @@ async def reset_hard(ctx, *, message=''):
     #bot.workflow_mgr.active_workflow.reset()
     await reboot_manager(bot, ctx)
 
-
-
 async def register_from_attachment(ctx, workflow_name):
     workflow_url = ctx.message.attachments[0]
     response = requests.get(workflow_url)
-    #_, fname = response.headers['Content-Disposition'].split('filename=')
-    #fname = fname[1:-1] # remove quotes
-    #fname = f"{workflow_name}.json"
+
     new_workflow = response.json()
     logger.info(new_workflow)
     logger.info(type(new_workflow))
     new_workflow = prep_workflow(new_workflow)
-    #with open(fname, 'w') as f:
-    #    json.dump(new_workflow, f)
-    #bot._workflow_registry[workflow_name] = fname
+
     if not workflow_name.startswith(api_prefix):
         workflow_name = api_prefix + workflow_name
     wf=Workflow(name=workflow_name, data=new_workflow)
@@ -208,25 +150,12 @@ def list_workflows_(bot):
             "Please provide a name to register the workflow to: `.register workflowName`"
         )
     else:
-        #workflows = list_saved_workflows()
         workflows = bot.workflow_mgr.workflow_registry.keys()
         logger.info(list(workflows))
         workflows = [k[len(api_prefix):] for k in workflows if k.startswith(api_prefix)]
         workflows.sort()
-        # logger.info(list(workflows))
-        # padleft = "* `"
-        # padright = "`\n"
-        # #bot._workflow_registry
-        # newline = "\n"
-        # #msg = (
-        # #    #f"Available registered workflows:{newline}```{newline.join(list_saved_workflows())}{newline}```"
-        # #    #f"Available registered workflows:{newline}```{newline.join(workflows)}{newline}```"
-        # #)
-        # #msg = workflows
         wf_str = "\n".join(list(workflows))
-        #logger.info(wf_str)
         msg = "Available registered workflows:\n```\n" + wf_str + "\n```\n"
-        #logger.info(msg)
     return msg
 
 
@@ -257,19 +186,8 @@ async def list_(ctx, *, message=''):
     await ctx.reply(answer)
 
 
-# def get_workflow(bot,workflow_name):
-#     if workflow_name not in bot._workflow_registry:
-#         return copy.deepcopy(bot._base_workflow), False
-#     else:
-#         fpath = bot._workflow_registry[workflow_name]
-#         return load_workflow(fpath), True
-
-
 @bot.command()
 async def describe(ctx, *, message=''):
-    #w,_ = get_workflow(bot, message)
-    #w = fetch_saved_workflow(message)
-    #outstr = summarize_workflow(w)
     header = f"Active workflow: **{bot.workflow_mgr.active_workflow.name[len(api_prefix):]}**"
     wf_descr = bot.workflow_mgr.active_workflow.summarize()
     outstr = header + "\n```\n" + wf_descr + "\n```"
@@ -284,7 +202,6 @@ async def set_(ctx, *, message=''):
         return
     if not workflow_name.startswith(api_prefix):
         workflow_name = api_prefix + workflow_name
-    # new_workflow, is_new = get_workflow(bot, workflow_name)
     try:
         bot.workflow_mgr.set_active(workflow_name)
         addendum = ""
@@ -356,6 +273,5 @@ async def dream(ctx, *, message=''):
 #         #logger.info("Comfy restarting...")
 #     #except (ConnectionRefusedError, requests.exceptions.ConnectionError):    
 #     await on_ready()
-
 
 bot.run(bot_user_token)
