@@ -6,10 +6,13 @@ API_WORKFLOW_NAME_PREFIX = '_api_'
 #######################################
 
 def set_node_by_title(workflow, target_node, target_attr, value):
-    workflow = copy.deepcopy(workflow)
+    #workflow = copy.deepcopy(workflow)
     for node_id, node in workflow.items():
+        node = copy.deepcopy(node) # just to ensure we aren't sneaking changes through the backdoor
         if node['_meta']['title'] == target_node:
             node['inputs'][target_attr] = value
+        # need to trigger workflow.__setitem__ for change detection
+            workflow[node_id] = node
     return workflow
 
 

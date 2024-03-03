@@ -40,18 +40,18 @@ class Workflow(UserDict):
             self.fetch()
         return self._data
     
-    @data.setter
-    def data(self, other):
-        if isinstance(other, Workflow):
-            self._data = deepcopy(other.data)
-        elif isinstance(other, str):
-            self._data = deepcopy(Workflow(name=other).data)
-        elif isinstance(other, dict):
-            self._data = deepcopy(other)
-        else:
-            raise NotImplementedError
+    # @data.setter
+    # def data(self, other):
+    #     if isinstance(other, Workflow):
+    #         self._data = deepcopy(other.data)
+    #     elif isinstance(other, str):
+    #         self._data = deepcopy(Workflow(name=other).data)
+    #     elif isinstance(other, dict):
+    #         self._data = deepcopy(other)
+    #     else:
+    #         raise NotImplementedError
         
-        self._uncommitted_changes = True
+    #     self._uncommitted_changes = True
 
     def reset(self):
          self._data = deepcopy(self._baseline)
@@ -120,7 +120,7 @@ class WorkflowManager:
     
     def refresh_workflow_registry(self):
         #self.data = {wf_name:Workflow(wf_name) for wf_name in list_saved_workflows(api_only=True)}
-        self.workflow_registry = {wf_name:Workflow(wf_name) for wf_name in list_saved_workflows(api_only=True)}
+        self.workflow_registry = {wf_name:Workflow(name=wf_name) for wf_name in list_saved_workflows(api_only=True)}
 
     def reset(self, all=False):
         """
