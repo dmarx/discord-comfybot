@@ -1,5 +1,5 @@
 from pathlib import Path
-from comfy_client import (
+from .comfy_client import (
     #summarize_saved_workflow,
     list_available_checkpoints,
     list_available_loras,
@@ -9,8 +9,8 @@ from comfy_client import (
     #_save_workflow
 )
 
-from workflow_utils import API_WORKFLOW_NAME_PREFIX, is_valid_api_workflow
-from workflow_manager import Workflow, WorkflowManager
+from .workflow_utils import API_WORKFLOW_NAME_PREFIX, is_valid_api_workflow
+from .workflow_manager import Workflow, WorkflowManager
 
 
 def summarize_saved_workflow(name):

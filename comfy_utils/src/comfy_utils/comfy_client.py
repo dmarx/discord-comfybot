@@ -12,7 +12,7 @@ import uuid
 import websocket
 
 
-from workflow_utils import (
+from .workflow_utils import (
     API_WORKFLOW_NAME_PREFIX,
 )
 

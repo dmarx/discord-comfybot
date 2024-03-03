@@ -6,20 +6,20 @@ from typing import Dict
 
 import json
 
-from comfy_client import (
+from .comfy_client import (
     fetch_saved_workflow,
     list_saved_workflows,
     fetch_saved_workflow,
     save_workflow,
 )
-from workflow_utils import (
+from .workflow_utils import (
     #API_WORKFLOW_NAME_PREFIX,
     is_valid_api_workflow,
     summarize_workflow,
     # prep_workflow,
     # set_node_by_title,
 )
-from workflow_utils import API_WORKFLOW_NAME_PREFIX as api_prefix
+from .workflow_utils import API_WORKFLOW_NAME_PREFIX as api_prefix
 
 from loguru import logger
 

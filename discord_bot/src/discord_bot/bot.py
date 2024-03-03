@@ -17,8 +17,8 @@ import websocket
 import discord
 from discord.ext import commands
 
-from mini_parser import parse_args
-from comfy_client import (
+from discord_bot.mini_parser import parse_args
+from comfy_utils.comfy_client import (
     get_outputs,
     server_address,
     client_id,
@@ -27,14 +27,14 @@ from comfy_client import (
     list_available_loras,
     get_model_zoo,
 )
-from workflow_utils import (
+from comfy_utils.workflow_utils import (
     summarize_workflow,
     prep_workflow,
     set_node_by_title,
 )
 
-from workflow_manager import WorkflowManager, Workflow
-from workflow_utils import API_WORKFLOW_NAME_PREFIX as api_prefix
+from comfy_utils.workflow_manager import WorkflowManager, Workflow
+from comfy_utils.workflow_utils import API_WORKFLOW_NAME_PREFIX as api_prefix
 
 from collections import Counter
 import requests
@@ -93,6 +93,9 @@ async def on_ready():
         logger.info(msg)
         #await ctx.reply(msg)
     except KeyError:
+        # TODO: i fno default registered, we should register a workflow that shipped with the code as default.
+        # if we're feeling real fancy, we could update the workflow to default to a model that we know is registered
+        # on the comfy instance
         logger.info(
             "Default workflow not registered. Please set a 'default' workflow by "
             "invoking `.register default` with the workflow attached."
