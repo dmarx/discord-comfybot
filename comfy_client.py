@@ -110,7 +110,7 @@ def queue_prompt(prompt):
     req =  urllib.request.Request("http://{}/prompt".format(server_address), data=data)
     return json.loads(urllib.request.urlopen(req).read())
 
-def get_image(filename, subfolder, folder_type):
+def get_output(filename, subfolder, folder_type):
     data = {"filename": filename, "subfolder": subfolder, "type": folder_type}
     url_values = urllib.parse.urlencode(data)
     with urllib.request.urlopen("http://{}/view?{}".format(server_address, url_values)) as response:
@@ -120,9 +120,9 @@ def get_history(prompt_id):
     with urllib.request.urlopen("http://{}/history/{}".format(server_address, prompt_id)) as response:
         return json.loads(response.read())
 
-def get_images(ws: websocket.WebSocket, prompt: dict):
+def get_outputs(ws: websocket.WebSocket, prompt: dict):
     prompt_id = queue_prompt(prompt)['prompt_id']
-    output_images = {}
+    all_outputs = {}
     while True:
         out = ws.recv()
         if isinstance(out, str):
@@ -138,11 +138,20 @@ def get_images(ws: websocket.WebSocket, prompt: dict):
     for o in history['outputs']:
         for node_id in history['outputs']:
             node_output = history['outputs'][node_id]
-            if 'images' in node_output:
-                images_output = []
-                for image in node_output['images']:
-                    image_data = get_image(image['filename'], image['subfolder'], image['type'])
-                    images_output.append(image_data)
-            output_images[node_id] = images_output
 
-    return output_images
+            # if 'images' in node_output:
+            #     images_output = []
+            #     for image in node_output['images']:
+            #         image_data = get_image(image['filename'], image['subfolder'], image['type'])
+            #         images_output.append(image_data)
+            # output_images[node_id] = images_output
+            for out_type in ('gifs', 'images'):
+                if out_type in node_output:
+                    _outputs = []
+                    for output in node_output[out_type]:
+                        output = get_output(output['filename'], output['subfolder'], output['type'])
+                        _outputs.append(output)
+                    if _outputs:
+                        all_outputs[out_type] = _outputs
+
+    return all_outputs
