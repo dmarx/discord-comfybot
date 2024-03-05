@@ -13,19 +13,34 @@ NB: This tool is intended for private recreational use in small, private, carefu
 
 ### Setup
 
-1. Set up a python venv and install dependencies
+1. Download the code
 
-    python -m venv .venv
-    source .venv/bin/activate
-    pip install -r requirements.txt
+    $ git clone https://github.com/dmarx/discord-bot
+    $ cd discord-bot
 
-2. Visit https://discord.com/developers/applications and create a new discord bot application
+2. Set up a python venv
+
+    $ python -m venv .venv
+    $ source .venv/bin/activate
+
+3. Install stuff
+
+    $ pip install -r requirements.txt
+    $ pip install ./comfy_utils
+    $ pip install ./discord_bot
+
+4. Visit https://discord.com/developers/applications and create a new discord bot application
 
 3. Populate a `.env` file with the credentials from (2), or otherwise populate the required environment variables enumerated in `.env.example`
 
-4. Start the bot via `python bot.py`
+4. Start the bot
+
+    $ discord-bot
+
 
 ### Usage
+
+If the following list becomes out-of-date, running `.help` will pull the most recent docs directly from the bot.
 
 Supported arguments:
 
