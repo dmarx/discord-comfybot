@@ -13,30 +13,42 @@ NB: This tool is intended for private recreational use in small, private, carefu
 
 ### Setup
 
+0. Ensure the following extensions are installed in your ComfyUI instance
+
+  * https://github.com/ltdrdata/ComfyUI-Manager
+  * https://github.com/pythongosssss/ComfyUI-Custom-Scripts
+
 1. Download the code
 
+```
     $ git clone https://github.com/dmarx/discord-bot
     $ cd discord-bot
+```
 
 2. Set up a python venv
 
+```
     $ python -m venv .venv
     $ source .venv/bin/activate
+```
 
 3. Install stuff
 
+```
     $ pip install -r requirements.txt
     $ pip install ./comfy_utils
     $ pip install ./discord_bot
+```
 
 4. Visit https://discord.com/developers/applications and create a new discord bot application
 
-3. Populate a `.env` file with the credentials from (2), or otherwise populate the required environment variables enumerated in `.env.example`
+5. Populate a `.env` file with the credentials from (2), or otherwise populate the required environment variables enumerated in `.env.example`
 
-4. Start the bot
+6. Start the bot
 
+```
     $ discord-bot
-
+```
 
 ### Usage
 
