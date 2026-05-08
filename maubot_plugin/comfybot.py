@@ -103,7 +103,6 @@ def _prep_workflow(workflow):
 # comfy_client (inlined)
 # ---------------------------------------------------------------------------
 _server_address = os.environ.get('COMFY_URL', 'localhost:8188')
-_client_id = str(uuid.uuid4())
 
 
 def _comfy_is_ready() -> bool:
@@ -150,12 +149,6 @@ def _save_workflow(name, workflow):
     return requests.post(f"http://{_server_address}/pysssss/workflows", data=payload)
 
 
-def _queue_prompt(prompt):
-    data = json.dumps({"prompt": prompt, "client_id": _client_id}).encode()
-    req = urllib.request.Request(f"http://{_server_address}/prompt", data=data)
-    return json.loads(urllib.request.urlopen(req).read())
-
-
 def _get_output(filename, subfolder, folder_type):
     params = urllib.parse.urlencode({"filename": filename, "subfolder": subfolder, "type": folder_type})
     with urllib.request.urlopen(f"http://{_server_address}/view?{params}") as resp:
@@ -167,16 +160,31 @@ def _get_history(prompt_id):
         return json.loads(resp.read())
 
 
-def _get_outputs(ws: websocket.WebSocket, prompt: dict) -> dict:
-    prompt_id = _queue_prompt(prompt)['prompt_id']
-    while True:
-        out = ws.recv()
-        if isinstance(out, str):
-            msg = json.loads(out)
-            if msg['type'] == 'executing':
-                d = msg['data']
-                if d['node'] is None and d['prompt_id'] == prompt_id:
-                    break
+def _get_outputs(prompt: dict) -> dict:
+    """Submit prompt and wait for completion on a dedicated WebSocket.
+
+    Each call uses a fresh client_id + connection so concurrent !dream
+    requests don't steal each other's 'executing' events off a shared socket.
+    """
+    client_id = str(uuid.uuid4())
+    data = json.dumps({"prompt": prompt, "client_id": client_id}).encode()
+    req = urllib.request.Request(f"http://{_server_address}/prompt", data=data)
+    prompt_id = json.loads(urllib.request.urlopen(req).read())['prompt_id']
+
+    ws = websocket.WebSocket()
+    ws.connect(f"ws://{_server_address}/ws?clientId={client_id}")
+    try:
+        while True:
+            out = ws.recv()
+            if isinstance(out, str):
+                msg = json.loads(out)
+                if msg['type'] == 'executing':
+                    d = msg['data']
+                    if d['node'] is None and d['prompt_id'] == prompt_id:
+                        break
+    finally:
+        ws.close()
+
     history = _get_history(prompt_id)[prompt_id]
     all_outputs: dict = {}
     for node_id in history['outputs']:
@@ -415,7 +423,7 @@ class Config(BaseProxyConfig):
 
 class ComfyBotPlugin(Plugin):
     workflow_mgr: Optional[_WorkflowManager] = None
-    ws_comfy: Optional[websocket.WebSocket] = None
+    comfy_ready: bool = False
 
     @classmethod
     def get_config_class(cls) -> Type[Config]:
@@ -423,7 +431,7 @@ class ComfyBotPlugin(Plugin):
 
     async def start(self) -> None:
         self.workflow_mgr = None
-        self.ws_comfy = None
+        self.comfy_ready = False
         try:
             self.config.load_and_update()
         except Exception as e:
@@ -436,13 +444,6 @@ class ComfyBotPlugin(Plugin):
         self.log.info(f"ComfyBot targeting ComfyUI at {_server_address}")
         asyncio.get_event_loop().create_task(self._init_comfy())
 
-    async def stop(self) -> None:
-        if self.ws_comfy:
-            try:
-                self.ws_comfy.close()
-            except Exception:
-                pass
-
     async def _init_comfy(self) -> None:
         loop = asyncio.get_event_loop()
         wait = 5
@@ -454,13 +455,8 @@ class ComfyBotPlugin(Plugin):
             await asyncio.sleep(wait)
             wait = min(wait * 2, 60)
 
-        def _connect():
-            ws = websocket.WebSocket()
-            ws.connect(f"ws://{_server_address}/ws?clientId={_client_id}")
-            return ws
-
-        self.ws_comfy = await loop.run_in_executor(None, _connect)
-        self.log.info("ComfyUI WebSocket connected")
+        self.comfy_ready = True
+        self.log.info("ComfyUI ready")
 
         try:
             self.workflow_mgr = await loop.run_in_executor(None, _WorkflowManager)
@@ -504,7 +500,7 @@ class ComfyBotPlugin(Plugin):
         if not args:
             await evt.reply("Usage: `!dream <prompt> [--NodeName.attr value ...]`")
             return
-        if not self.ws_comfy:
+        if not self.comfy_ready:
             await evt.reply("ComfyUI not connected yet — please wait a moment and try again.")
             return
         if "--seed" not in args:
@@ -546,7 +542,7 @@ class ComfyBotPlugin(Plugin):
 
         await evt.reply(f"Queuing: `{simple}`")
         try:
-            outputs = await loop.run_in_executor(None, _get_outputs, self.ws_comfy, workflow)
+            outputs = await loop.run_in_executor(None, _get_outputs, workflow)
         except Exception as e:
             await evt.reply(f"ComfyUI error: {e}")
             return
