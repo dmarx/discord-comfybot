@@ -1,0 +1,12 @@
+# URL of the ComfyUI backend (no http:// prefix, host:port format).
+# When running inside Docker alongside this stack: comfyui:8188
+comfy_url: "comfyui:8188"
+
+# Optional Apprise notification URLs for fan-out after each generated image.
+# Supports any Apprise-compatible URL (Discord webhooks, Slack, etc.).
+# See https://github.com/caronc/apprise/wiki for URL formats.
+# Example:
+#   apprise_urls:
+#     - "discord://webhook_id/webhook_token"
+#     - "slack://tokenA/tokenB/tokenC/channel"
+apprise_urls: []
