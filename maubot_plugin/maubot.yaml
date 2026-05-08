@@ -3,18 +3,10 @@ version: 0.1.0
 license: MIT
 modules:
   - comfybot
-  - mini_parser
-  - notify
-  - comfy_client
-  - workflow_utils
-  - workflow_manager
 main_class: ComfyBotPlugin
-extra_files:
-  - special_args_map.json
 dependencies:
   - apprise>=1.7
   - websocket-client>=1.7
   - requests>=2.31
   - loguru>=0.7
-  - python-dotenv>=1.0
 config: true

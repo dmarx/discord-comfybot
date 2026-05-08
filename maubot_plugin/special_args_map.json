@@ -1,4 +1,0 @@
-{
-    "prompt":{"node_name":"Prompt", "target_attr":"text"},
-    "seed": {"node_name":"Ksampler", "target_attr":"seed"}
-}
